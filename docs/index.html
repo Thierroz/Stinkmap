@@ -31,6 +31,8 @@
       --safe-bot:  env(safe-area-inset-bottom, 0px);
       --tab-h:     68px;
       --header-h:  62px;
+      /* total tab bar height including home-indicator safe area */
+      --tabbar-h:  calc(var(--tab-h) + var(--safe-bot));
     }
 
     html, body { height: 100dvh; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
@@ -40,8 +42,20 @@
       position: fixed;
       top: calc(var(--safe-top) + var(--header-h));
       left: 0; right: 0;
-      bottom: var(--tab-h);
+      bottom: var(--tabbar-h);
       z-index: 0;
+    }
+
+    /* Dark attribution bar — blends with map */
+    .leaflet-control-attribution {
+      background: rgba(13,13,26,.75) !important;
+      color: rgba(181,245,66,.35) !important;
+      font-size: .58rem !important;
+      border-radius: 4px 0 0 0 !important;
+      backdrop-filter: blur(4px);
+    }
+    .leaflet-control-attribution a {
+      color: rgba(181,245,66,.55) !important;
     }
 
     /* ── Header ───────────────────────────────────────────── */
@@ -75,11 +89,13 @@
     /* ── Tab bar ──────────────────────────────────────────── */
     #tabbar {
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-      height: var(--tab-h); padding-bottom: var(--safe-bot);
+      height: var(--tabbar-h); /* grows with safe area */
+      padding-bottom: var(--safe-bot); /* content sits in top 68px */
       background: rgba(13,13,26,.95); backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
-      display: flex;
+      display: flex; align-items: flex-start; /* anchor content to top of padding zone */
     }
+    .tab { padding-top: 0; height: var(--tab-h); }
     .tab {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 3px;
@@ -94,7 +110,7 @@
 
     /* ── Mode hint (shown on map) ─────────────────────────── */
     #mode-hint {
-      position: fixed; bottom: calc(var(--tab-h) + 14px); left: 50%;
+      position: fixed; bottom: calc(var(--tabbar-h) + 14px); left: 50%;
       transform: translateX(-50%);
       background: rgba(13,13,26,.88); backdrop-filter: blur(8px);
       border: 1px solid var(--border); border-radius: 30px;
@@ -136,7 +152,7 @@
 
     /* ── Rate bottom sheet ────────────────────────────────── */
     #rate-sheet {
-      position: fixed; bottom: var(--tab-h); left: 0; right: 0; z-index: 150;
+      position: fixed; bottom: var(--tabbar-h); left: 0; right: 0; z-index: 150;
       background: var(--surface2);
       border-top: 1px solid rgba(181,245,66,.25);
       border-radius: 20px 20px 0 0;
@@ -219,7 +235,7 @@
       position: fixed;
       top: calc(var(--safe-top) + var(--header-h));
       left: 0; right: 0;
-      bottom: var(--tab-h);
+      bottom: var(--tabbar-h);
       z-index: 150;
       background: var(--bg);
       overflow-y: auto; -webkit-overflow-scrolling: touch;
@@ -273,7 +289,7 @@
 
     /* Toast */
     #toast {
-      position: fixed; bottom: calc(var(--safe-bot) + var(--tab-h) + 14px); left: 50%;
+      position: fixed; bottom: calc(var(--tabbar-h) + 14px); left: 50%;
       transform: translateX(-50%) translateY(60px);
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 40px; padding: 11px 22px;
