@@ -15,7 +15,6 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    /* ── Reset & tokens ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -37,12 +36,10 @@
     html, body {
       height: 100%; height: 100dvh;
       font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       overflow: hidden;
     }
 
-    /* animated radial backdrop */
     body::before {
       content: '';
       position: fixed; inset: 0; z-index: 0;
@@ -53,103 +50,73 @@
       pointer-events: none;
     }
 
-    /* ── Shell layout ───────────────────────────────────────────── */
     #app {
       position: relative; z-index: 1;
       display: flex; flex-direction: column;
       height: 100dvh;
     }
 
-    /* ── Views ──────────────────────────────────────────────────── */
-    .view {
-      flex: 1;
-      overflow: hidden;
-      display: none;
-      flex-direction: column;
-    }
+    .view { flex: 1; overflow: hidden; display: none; flex-direction: column; }
     .view.active { display: flex; }
 
-    /* ── Bottom Tab Bar ─────────────────────────────────────────── */
+    /* ── Tab bar ── */
     #tabbar {
-      height: var(--tab-h);
-      padding-bottom: var(--safe-bot);
-      background: rgba(13,13,26,.95);
-      backdrop-filter: blur(16px);
+      height: var(--tab-h); padding-bottom: var(--safe-bot);
+      background: rgba(13,13,26,.95); backdrop-filter: blur(16px);
       border-top: 1px solid var(--border);
-      display: flex;
-      flex-shrink: 0;
-      z-index: 100;
+      display: flex; flex-shrink: 0; z-index: 100;
     }
     .tab {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 4px;
       cursor: pointer; border: none; background: none;
       color: var(--text-muted); font-family: inherit;
-      font-size: .72rem; font-weight: 500;
-      letter-spacing: .04em;
-      transition: color .2s;
-      -webkit-tap-highlight-color: transparent;
+      font-size: .72rem; font-weight: 500; letter-spacing: .04em;
+      transition: color .2s; -webkit-tap-highlight-color: transparent;
     }
     .tab .tab-icon { font-size: 1.55rem; transition: transform .2s; }
     .tab.active { color: var(--accent); }
     .tab.active .tab-icon { transform: scale(1.15); }
 
-    /* ── Map view ───────────────────────────────────────────────── */
+    /* ── Map view ── */
     #map-view { position: relative; }
-
     #map-header {
       padding: calc(var(--safe-top) + 14px) 20px 12px;
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(13,13,26,.88);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
+      background: rgba(13,13,26,.88); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
     }
-    .map-title {
-      display: flex; align-items: center; gap: 10px;
-    }
+    .map-title { display: flex; align-items: center; gap: 10px; }
     .logo-img {
       width: 36px; height: 36px;
       filter: drop-shadow(0 0 10px rgba(181,245,66,.6));
       animation: float 3.5s ease-in-out infinite;
     }
-    @keyframes float {
-      0%,100% { transform: translateY(0); }
-      50%      { transform: translateY(-5px); }
-    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
     h1 {
       font-size: 1.3rem; font-weight: 700;
       background: linear-gradient(135deg, #b5f542, #5dff8a);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .rating-count {
       font-size: .75rem; color: var(--text-muted);
-      background: var(--accent-dim);
-      border: 1px solid var(--border);
+      background: var(--accent-dim); border: 1px solid var(--border);
       border-radius: 20px; padding: 4px 12px;
     }
     .rating-count span { color: var(--accent); font-weight: 600; }
 
-    #leaflet-map {
-      flex: 1;
-      z-index: 1;
-    }
+    #leaflet-map { flex: 1; z-index: 1; }
 
-    /* Leaflet popup customisation */
     .leaflet-popup-content-wrapper {
-      background: var(--surface2) !important;
-      border: 1px solid var(--border) !important;
-      color: var(--text) !important;
-      border-radius: 14px !important;
+      background: var(--surface2) !important; border: 1px solid var(--border) !important;
+      color: var(--text) !important; border-radius: 14px !important;
       font-family: 'Inter', sans-serif !important;
     }
     .leaflet-popup-tip { background: var(--surface2) !important; }
-    .popup-stink { font-size: 1.4rem; }
-    .popup-meta { font-size: .78rem; color: var(--text-muted); margin-top: 4px; }
+    .popup-stink { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    .popup-meta  { font-size: .78rem; color: var(--text-muted); margin-top: 4px; }
     .popup-comment { font-size: .85rem; margin-top: 6px; font-style: italic; }
 
-    /* FAB */
     #fab {
       position: absolute; bottom: 24px; right: 20px;
       width: 60px; height: 60px; border-radius: 50%;
@@ -163,56 +130,36 @@
     }
     #fab:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(181,245,66,.25); }
 
-    /* ── Rate view ──────────────────────────────────────────────── */
-    #rate-view {
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
+    /* ── Rate view ── */
+    #rate-view { overflow-y: auto; -webkit-overflow-scrolling: touch; }
     .rate-inner {
       max-width: 480px; margin: 0 auto;
       padding: calc(var(--safe-top) + 24px) 20px calc(var(--safe-bot) + 100px);
       display: flex; flex-direction: column; gap: 16px;
     }
-
     .rate-header { text-align: center; margin-bottom: 8px; }
-    .rate-header .big-emoji {
-      font-size: 3.5rem;
-      display: block;
-      animation: float 3s ease-in-out infinite;
-    }
+    .rate-header .big-emoji { font-size: 3.5rem; display: block; animation: float 3s ease-in-out infinite; }
     h2 {
       font-size: 1.5rem; font-weight: 700; margin-top: 10px;
       background: linear-gradient(135deg, #b5f542, #5dff8a);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      background-clip: text;
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .rate-sub { font-size: .82rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* Cards */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      backdrop-filter: blur(8px);
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; backdrop-filter: blur(8px);
     }
     .card-label {
       font-size: .72rem; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--text-muted);
-      margin-bottom: 12px;
+      text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
     }
 
-    /* Location row */
-    .loc-row {
-      display: flex; align-items: center; gap: 12px;
-    }
+    .loc-row { display: flex; align-items: center; gap: 12px; }
     .loc-dot {
       width: 12px; height: 12px; border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 10px var(--accent);
-      flex-shrink: 0;
-      animation: pulse 1.8s ease-in-out infinite;
+      background: var(--accent); box-shadow: 0 0 10px var(--accent);
+      flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite;
     }
     @keyframes pulse {
       0%,100% { box-shadow: 0 0 6px var(--accent); }
@@ -223,28 +170,23 @@
     #loc-text { font-size: .88rem; color: var(--text-muted); }
     #loc-text.ready { color: var(--text); }
 
-    /* Stink scale slider */
-    .scale-display {
-      text-align: center; margin-bottom: 16px;
-    }
-    #stink-emoji { font-size: 3.5rem; display: block; line-height: 1; }
-    #stink-label {
-      font-size: 1rem; font-weight: 600; margin-top: 8px;
-      color: var(--accent);
-    }
+    /* Slider */
+    .scale-display { text-align: center; margin-bottom: 16px; }
+    #stink-value { font-size: 3.8rem; font-weight: 800; line-height: 1; color: var(--accent); }
+    #stink-label { font-size: 1rem; font-weight: 600; margin-top: 6px; color: var(--accent); }
+
     #stink-slider {
       width: 100%; margin: 0; cursor: pointer;
       -webkit-appearance: none; appearance: none;
-      height: 6px; border-radius: 3px;
-      background: linear-gradient(to right, #5dff8a, #b5f542, #f0c040, #ff7a40, #ff3030);
+      height: 8px; border-radius: 4px;
+      background: linear-gradient(to right, #00ff88, #b5f542, #ffcc00, #ff7a40, #ff0000);
       outline: none;
     }
     #stink-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 28px; height: 28px; border-radius: 50%;
-      background: #fff;
+      width: 30px; height: 30px; border-radius: 50%;
+      background: #fff; cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,.5), 0 0 0 3px var(--accent);
-      cursor: pointer;
       transition: transform .1s;
     }
     #stink-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
@@ -259,16 +201,12 @@
       background: var(--surface2); border: 1px solid var(--border);
       border-radius: 12px; color: var(--text);
       font-size: .95rem; font-family: inherit;
-      outline: none; resize: none;
-      transition: border-color .2s;
-      -webkit-appearance: none;
+      outline: none; resize: none; transition: border-color .2s;
+      -webkit-appearance: none; appearance: none;
     }
     #comment::placeholder { color: var(--text-muted); }
     #comment:focus { border-color: var(--accent); }
-    .char-count {
-      text-align: right; font-size: .7rem;
-      color: var(--text-muted); margin-top: 6px;
-    }
+    .char-count { text-align: right; font-size: .7rem; color: var(--text-muted); margin-top: 6px; }
     .char-count.warn { color: #f0c040; }
 
     /* Submit button */
@@ -283,39 +221,40 @@
       display: flex; align-items: center; justify-content: center; gap: 10px;
       -webkit-tap-highlight-color: transparent;
     }
-    #submit-btn:disabled {
-      opacity: .4; cursor: not-allowed; box-shadow: none;
-    }
-    #submit-btn:not(:disabled):active {
-      transform: scale(.97); box-shadow: 0 2px 10px rgba(181,245,66,.2);
-    }
+    #submit-btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    #submit-btn:not(:disabled):active { transform: scale(.97); box-shadow: 0 2px 10px rgba(181,245,66,.2); }
 
     /* Spinner */
     .spinner {
       width: 20px; height: 20px;
-      border: 3px solid rgba(13,13,26,.4);
-      border-top-color: #0d0d1a;
-      border-radius: 50%;
-      animation: spin .7s linear infinite;
+      border: 3px solid rgba(13,13,26,.4); border-top-color: #0d0d1a;
+      border-radius: 50%; animation: spin .7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Recent ratings */
-    .empty-msg {
-      text-align: center; color: var(--text-muted);
-      padding: 20px 0; font-size: .9rem;
-    }
+    /* My ratings list */
+    .empty-msg { text-align: center; color: var(--text-muted); padding: 20px 0; font-size: .9rem; }
     .rating-item {
       display: flex; align-items: flex-start; gap: 12px;
-      padding: 14px 0;
-      border-bottom: 1px solid rgba(255,255,255,.05);
+      padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.05);
     }
     .rating-item:last-child { border-bottom: none; }
-    .ri-emoji { font-size: 1.8rem; flex-shrink: 0; line-height: 1.2; }
+    .ri-score {
+      font-size: 1.5rem; font-weight: 800; flex-shrink: 0;
+      min-width: 36px; text-align: center; line-height: 1.2;
+    }
     .ri-info { flex: 1; }
     .ri-title { font-size: .88rem; font-weight: 600; }
     .ri-meta  { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
     .ri-comment { font-size: .8rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+    .ri-delete {
+      background: none; border: 1px solid rgba(255,77,77,.3);
+      color: var(--danger); border-radius: 8px;
+      padding: 5px 10px; font-size: .72rem; cursor: pointer;
+      transition: background .2s; flex-shrink: 0; align-self: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .ri-delete:active { background: rgba(255,77,77,.15); }
 
     /* Toast */
     #toast {
@@ -326,18 +265,15 @@
       font-size: .88rem; font-weight: 500;
       transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
       opacity: 0; pointer-events: none; white-space: nowrap;
-      box-shadow: 0 8px 30px rgba(0,0,0,.4);
-      z-index: 9999;
+      box-shadow: 0 8px 30px rgba(0,0,0,.4); z-index: 9999;
     }
-    #toast.show {
-      transform: translateX(-50%) translateY(0); opacity: 1;
-    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- ══════════════════ MAP VIEW ══════════════════ -->
+  <!-- MAP VIEW -->
   <div class="view active" id="map-view">
     <div id="map-header">
       <div class="map-title">
@@ -350,7 +286,7 @@
     <button id="fab" title="Rate this spot">💨</button>
   </div>
 
-  <!-- ══════════════════ RATE VIEW ══════════════════ -->
+  <!-- RATE VIEW -->
   <div class="view" id="rate-view">
     <div class="rate-inner">
 
@@ -369,17 +305,17 @@
         </div>
       </div>
 
-      <!-- Stink scale -->
+      <!-- Stink scale 1-10 -->
       <div class="card">
-        <div class="card-label">👃 Stink intensity</div>
+        <div class="card-label">👃 Stink intensity (1–10)</div>
         <div class="scale-display">
-          <span id="stink-emoji">😐</span>
-          <div id="stink-label">Barely noticeable</div>
+          <span id="stink-value">3</span>
+          <div id="stink-label">A slight hint</div>
         </div>
-        <input type="range" id="stink-slider" min="1" max="5" value="2" step="1" />
+        <input type="range" id="stink-slider" min="1" max="10" value="3" step="1" />
         <div class="scale-labels">
-          <span>🌸 Fresh</span>
-          <span>💀 Deadly</span>
+          <span>1 — 🌸 Fresh</span>
+          <span>💀 Deadly — 10</span>
         </div>
       </div>
 
@@ -396,16 +332,16 @@
         <span id="submit-label">Submit Stink Rating</span>
       </button>
 
-      <!-- Recent ratings -->
+      <!-- My ratings -->
       <div class="card">
-        <div class="card-label">🕒 My recent ratings</div>
-        <div id="recent-list"><p class="empty-msg">No ratings yet. Be the first!</p></div>
+        <div class="card-label">🗑️ My ratings — tap to delete</div>
+        <div id="my-ratings-list"><p class="empty-msg">You haven't rated anything yet.</p></div>
       </div>
 
     </div>
   </div>
 
-  <!-- ══════════════════ TAB BAR ══════════════════ -->
+  <!-- TAB BAR -->
   <nav id="tabbar">
     <button class="tab active" id="tab-map" data-view="map-view">
       <span class="tab-icon">🗺️</span>
@@ -420,20 +356,21 @@
 
 <div id="toast"></div>
 
-<!-- Leaflet -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Leaflet.heat -->
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
 <script type="module">
-// ──────────────────────────────────────────────────────────────
-// Firebase
-// ──────────────────────────────────────────────────────────────
-import { initializeApp }           from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-import { getFirestore, collection,
-         addDoc, onSnapshot,
-         query, orderBy, limit }   from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+import { initializeApp }      from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getAuth,
+         signInAnonymously,
+         onAuthStateChanged }  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+import { getFirestore,
+         collection, addDoc,
+         deleteDoc, doc,
+         onSnapshot, query,
+         orderBy, limit }      from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
 
+// ── Firebase ──────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey:            "AIzaSyC_40kkX7noNP4sCiphkla-n2yoaykTDfE",
   authDomain:        "stinkmap.firebaseapp.com",
@@ -443,22 +380,38 @@ const firebaseConfig = {
   appId:             "1:216908791201:web:23fb8d8e70a584e4c79fe0"
 };
 
-const firebaseApp = initializeApp(firebaseConfig);
-const db          = getFirestore(firebaseApp);
+const app         = initializeApp(firebaseConfig);
+const auth        = getAuth(app);
+const db          = getFirestore(app);
 const ratingsCol  = collection(db, 'ratings');
 
-// ──────────────────────────────────────────────────────────────
-// Constants & helpers
-// ──────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────
+let currentUser = null;
+let userPos     = null;
+let sliderVal   = 3;
+let allRatings  = [];
 
-const SCALES = [
-  { emoji: '🌸', label: 'Fresh air',          color: '#5dff8a' },
-  { emoji: '😐', label: 'Barely noticeable',  color: '#b5f542' },
-  { emoji: '🤢', label: 'Pretty bad',         color: '#f0c040' },
-  { emoji: '🤮', label: 'Really stinks!',     color: '#ff7a40' },
-  { emoji: '💀', label: 'Absolutely deadly',  color: '#ff3030' },
+// ── Scale (1–10) ──────────────────────────────────────────────
+const LABELS = [
+  '',                    // index 0 unused
+  'Perfectly fresh',     // 1
+  'Barely anything',     // 2
+  'A slight hint',       // 3
+  'Slightly off',        // 4
+  'Noticeable',          // 5
+  'Getting bad',         // 6
+  'Pretty bad',          // 7
+  'Really stinks!',      // 8
+  'Awful',               // 9
+  'Absolutely deadly',   // 10
 ];
 
+const STINK_COLORS = [
+  '', '#00ff88', '#44ff66', '#88ee44', '#ccee22', '#eeff00',
+  '#ffcc00', '#ff8800', '#ff4400', '#ff1100', '#cc0000'
+];
+
+// ── Helpers ───────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
 function showToast(msg, ms = 2800) {
@@ -475,11 +428,14 @@ function formatDate(ts) {
   });
 }
 
-// ──────────────────────────────────────────────────────────────
-// GPS
-// ──────────────────────────────────────────────────────────────
-let userPos = null;
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
+// ── GPS ───────────────────────────────────────────────────────
 function getUserPosition() {
   return new Promise(resolve => {
     if (!navigator.geolocation) return resolve(null);
@@ -491,19 +447,11 @@ function getUserPosition() {
   });
 }
 
-// ──────────────────────────────────────────────────────────────
-// Map
-// ──────────────────────────────────────────────────────────────
-let map = null;
-let heatLayer = null;
-let markersLayer = null;
+// ── Map ───────────────────────────────────────────────────────
+let map, heatLayer;
 
 function initMap() {
-  map = L.map('leaflet-map', {
-    center: [20, 0], zoom: 2,
-    zoomControl: false,
-    attributionControl: true,
-  });
+  map = L.map('leaflet-map', { center: [20, 0], zoom: 2, zoomControl: false });
 
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
@@ -511,71 +459,99 @@ function initMap() {
   }).addTo(map);
 
   heatLayer = L.heatLayer([], {
-    radius: 35, blur: 25, maxZoom: 17, max: 5,
-    gradient: { 0.2: '#5dff8a', 0.4: '#b5f542', 0.6: '#f0c040', 0.8: '#ff7a40', 1.0: '#ff3030' }
+    radius: 40, blur: 30, maxZoom: 17, max: 10,
+    gradient: {
+      0.1: '#00ff88', 0.3: '#b5f542', 0.5: '#ffcc00',
+      0.7: '#ff7a40', 0.9: '#ff1100', 1.0: '#cc0000'
+    }
   }).addTo(map);
+}
 
-  markersLayer = L.layerGroup().addTo(map);
+// Build heatmap points: cluster ratings within ~30m,
+// use average stink as intensity.
+// Multiple nearby ratings → intensity stays as average,
+// but radius overlap from multiple points makes the blob larger.
+function buildHeatPoints(ratings) {
+  if (!ratings.length) return [];
+  const CLUSTER_KM = 0.03; // ~30 metres
+  const used = new Set();
+  const points = [];
+
+  for (let i = 0; i < ratings.length; i++) {
+    if (used.has(i)) continue;
+    const group = [ratings[i]];
+    used.add(i);
+    for (let j = i + 1; j < ratings.length; j++) {
+      if (used.has(j)) continue;
+      if (haversine(ratings[i].lat, ratings[i].lon, ratings[j].lat, ratings[j].lon) < CLUSTER_KM) {
+        group.push(ratings[j]);
+        used.add(j);
+      }
+    }
+    const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
+    const lon = group.reduce((s, r) => s + r.lon, 0) / group.length;
+    const avg = group.reduce((s, r) => s + r.stink, 0) / group.length;
+    const count = group.length;
+    // Add one point per rating in the cluster at the averaged position,
+    // so more ratings → bigger blob naturally in leaflet-heat
+    for (let k = 0; k < count; k++) {
+      points.push([lat, lon, avg]); // all same weight = avg
+    }
+  }
+  return points;
 }
 
 function renderMap(ratings) {
   $('rating-num').textContent = ratings.length;
-
-  // Update heatmap
-  heatLayer.setLatLngs(ratings.map(r => [r.lat, r.lon, r.stink]));
-
-  // Clear & re-add markers
-  markersLayer.clearLayers();
-  for (const r of ratings) {
-    const sc = SCALES[r.stink - 1];
-    const icon = L.divIcon({
-      className: '',
-      html: `<div style="font-size:1.6rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));cursor:pointer">${sc.emoji}</div>`,
-      iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -34]
-    });
-    const marker = L.marker([r.lat, r.lon], { icon });
-    marker.bindPopup(`
-      <div class="popup-stink">${sc.emoji} ${sc.label}</div>
-      <div class="popup-meta">📍 ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)}</div>
-      <div class="popup-meta">🕒 ${formatDate(r.ts)}</div>
-      ${r.comment ? `<div class="popup-comment">"${r.comment}"</div>` : ''}
-    `);
-    markersLayer.addLayer(marker);
-  }
+  heatLayer.setLatLngs(buildHeatPoints(ratings));
 }
 
-// ──────────────────────────────────────────────────────────────
-// Rate View
-// ──────────────────────────────────────────────────────────────
-let sliderVal = 2;
-let allRatings = []; // kept in sync by Firestore snapshot
-
+// ── Rate View ─────────────────────────────────────────────────
 function updateSlider(val) {
   sliderVal = val;
-  const sc = SCALES[val - 1];
-  $('stink-emoji').textContent = sc.emoji;
-  $('stink-label').textContent = sc.label;
-  $('stink-label').style.color = sc.color;
+  $('stink-value').textContent = val;
+  $('stink-value').style.color = STINK_COLORS[val];
+  $('stink-label').textContent = LABELS[val];
+  $('stink-label').style.color = STINK_COLORS[val];
 }
 
-function renderRecent(ratings) {
-  const list = $('recent-list');
-  if (!ratings.length) {
-    list.innerHTML = '<p class="empty-msg">No ratings yet worldwide. Be the first! 🌍</p>';
+function renderMyRatings(ratings) {
+  const mine = currentUser
+    ? ratings.filter(r => r.uid === currentUser.uid).slice(0, 15)
+    : [];
+  const list = $('my-ratings-list');
+  if (!mine.length) {
+    list.innerHTML = '<p class="empty-msg">You haven\'t rated anything yet.</p>';
     return;
   }
-  list.innerHTML = ratings.slice(0, 10).map(r => {
-    const sc = SCALES[r.stink - 1];
-    return `
-      <div class="rating-item">
-        <div class="ri-emoji">${sc.emoji}</div>
-        <div class="ri-info">
-          <div class="ri-title">${sc.label}</div>
-          <div class="ri-meta">📍 ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)} · ${formatDate(r.ts)}</div>
-          ${r.comment ? `<div class="ri-comment">"${r.comment}"</div>` : ''}
-        </div>
-      </div>`;
-  }).join('');
+  list.innerHTML = mine.map(r => `
+    <div class="rating-item">
+      <div class="ri-score" style="color:${STINK_COLORS[r.stink]}">${r.stink}</div>
+      <div class="ri-info">
+        <div class="ri-title">${LABELS[r.stink]}</div>
+        <div class="ri-meta">📍 ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)} · ${formatDate(r.ts)}</div>
+        ${r.comment ? `<div class="ri-comment">"${r.comment}"</div>` : ''}
+      </div>
+      <button class="ri-delete" data-id="${r.id}">Delete</button>
+    </div>`).join('');
+
+  list.querySelectorAll('.ri-delete').forEach(btn => {
+    btn.addEventListener('click', () => deleteRating(btn.dataset.id));
+  });
+}
+
+async function deleteRating(id) {
+  try {
+    await deleteDoc(doc(db, 'ratings', id));
+    showToast('🗑️ Rating deleted');
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Could not delete — try again');
+  }
+}
+
+function checkSubmitReady() {
+  $('submit-btn').disabled = !(userPos && currentUser);
 }
 
 async function startRateView() {
@@ -583,8 +559,8 @@ async function startRateView() {
   dot.className = 'loc-dot waiting';
   $('loc-text').textContent = 'Getting your location…';
   $('loc-text').className = '';
-  $('submit-btn').disabled = true;
   userPos = null;
+  checkSubmitReady();
 
   const pos = await getUserPosition();
   if (pos) {
@@ -592,24 +568,22 @@ async function startRateView() {
     dot.className = 'loc-dot';
     $('loc-text').textContent = `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}  (±${pos.acc} m)`;
     $('loc-text').className = 'ready';
-    $('submit-btn').disabled = false;
   } else {
     dot.className = 'loc-dot error';
     $('loc-text').textContent = 'Could not get GPS location. Please allow location access.';
-    showToast('⚠️ Location access denied — cannot rate this spot');
+    showToast('⚠️ Location access denied');
   }
-  renderRecent(allRatings);
+  checkSubmitReady();
+  renderMyRatings(allRatings);
 }
 
 async function submitRating() {
-  if (!userPos) return;
+  if (!userPos || !currentUser) return;
 
-  const btn   = $('submit-btn');
-  const label = $('submit-label');
-  const icon  = $('submit-icon');
+  const btn = $('submit-btn'), label = $('submit-label'), icon = $('submit-icon');
   btn.disabled = true;
   icon.innerHTML = '<div class="spinner"></div>';
-  label.textContent = 'Saving to Firestore…';
+  label.textContent = 'Saving…';
 
   try {
     await addDoc(ratingsCol, {
@@ -617,19 +591,17 @@ async function submitRating() {
       lon:     userPos.lon,
       stink:   sliderVal,
       comment: $('comment').value.trim(),
-      ts:      Date.now()
+      ts:      Date.now(),
+      uid:     currentUser.uid
     });
 
-    // Reset UI
     $('comment').value = '';
     $('char-count').textContent = '0 / 100';
     $('char-count').className = 'char-count';
-    updateSlider(2);
-    $('stink-slider').value = 2;
+    updateSlider(3);
+    $('stink-slider').value = 3;
 
-    showToast(`${SCALES[sliderVal - 1].emoji}  Rating submitted — everyone can see it!`);
-
-    // Fly to submitted spot then switch to map
+    showToast(`${sliderVal}/10 — Rating submitted! Everyone can see it 🌍`);
     switchTab('map-view');
     setTimeout(() => map.setView([userPos.lat, userPos.lon], 15, { animate: true }), 150);
 
@@ -639,73 +611,64 @@ async function submitRating() {
   } finally {
     icon.textContent = '💨';
     label.textContent = 'Submit Stink Rating';
-    btn.disabled = !userPos;
+    checkSubmitReady();
   }
 }
 
-// ──────────────────────────────────────────────────────────────
-// Firestore real-time listener
-// ──────────────────────────────────────────────────────────────
+// ── Firestore listener ────────────────────────────────────────
 function subscribeToRatings() {
-  const q = query(ratingsCol, orderBy('ts', 'desc'), limit(1000));
+  const q = query(ratingsCol, orderBy('ts', 'desc'), limit(2000));
   onSnapshot(q, snapshot => {
-    allRatings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    allRatings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMap(allRatings);
-    // Only update recent list if Rate tab is visible
-    if (document.getElementById('rate-view').classList.contains('active')) {
-      renderRecent(allRatings);
+    if ($('rate-view').classList.contains('active')) {
+      renderMyRatings(allRatings);
     }
   }, err => {
-    console.error('Firestore snapshot error:', err);
+    console.error(err);
     showToast('⚠️ Could not load ratings — check connection.', 4000);
   });
 }
 
-// ──────────────────────────────────────────────────────────────
-// Tab navigation
-// ──────────────────────────────────────────────────────────────
+// ── Tabs ──────────────────────────────────────────────────────
 function switchTab(viewId) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
   document.querySelector(`.tab[data-view="${viewId}"]`).classList.add('active');
-
   if (viewId === 'rate-view') startRateView();
   if (viewId === 'map-view')  setTimeout(() => map && map.invalidateSize(), 80);
 }
 
-// ──────────────────────────────────────────────────────────────
-// Events
-// ──────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => switchTab(tab.dataset.view));
-});
-
+// ── Events ────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.view)));
 $('fab').addEventListener('click', () => switchTab('rate-view'));
-
 $('stink-slider').addEventListener('input', e => updateSlider(+e.target.value));
-
 $('comment').addEventListener('input', e => {
   const n = e.target.value.length;
   $('char-count').textContent = `${n} / 100`;
   $('char-count').className = 'char-count' + (n > 80 ? ' warn' : '');
 });
-
 $('submit-btn').addEventListener('click', submitRating);
 
-// ──────────────────────────────────────────────────────────────
-// Init
-// ──────────────────────────────────────────────────────────────
-updateSlider(2);
+// ── Init ──────────────────────────────────────────────────────
+updateSlider(3);
 initMap();
-subscribeToRatings(); // starts the live Firestore listener
+subscribeToRatings();
 
-// Fly to user's location on first load
+// Anonymous auth — gives each user a persistent uid for ownership
+onAuthStateChanged(auth, user => {
+  currentUser = user;
+  checkSubmitReady();
+});
+signInAnonymously(auth).catch(console.error);
+
+// Fly to user location
 getUserPosition().then(pos => {
   if (pos && map) map.setView([pos.lat, pos.lon], 12, { animate: true });
 });
 
-// PWA service worker
+// PWA
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(console.warn);
 }
