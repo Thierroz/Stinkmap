@@ -50,11 +50,7 @@
       pointer-events: none;
     }
 
-    #app {
-      position: relative; z-index: 1;
-      display: flex; flex-direction: column;
-      height: 100dvh;
-    }
+    #app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100dvh; }
 
     .view { flex: 1; overflow: hidden; display: none; flex-direction: column; }
     .view.active { display: flex; }
@@ -107,15 +103,32 @@
 
     #leaflet-map { flex: 1; z-index: 1; }
 
+    /* Popup styles — injected into Leaflet */
     .leaflet-popup-content-wrapper {
-      background: var(--surface2) !important; border: 1px solid var(--border) !important;
-      color: var(--text) !important; border-radius: 14px !important;
-      font-family: 'Inter', sans-serif !important;
+      background: #1c1c3a !important; border: 1px solid rgba(181,245,66,.2) !important;
+      color: #e8ffe0 !important; border-radius: 14px !important;
+      font-family: 'Inter', sans-serif !important; box-shadow: 0 8px 30px rgba(0,0,0,.6) !important;
     }
-    .leaflet-popup-tip { background: var(--surface2) !important; }
-    .popup-stink { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
-    .popup-meta  { font-size: .78rem; color: var(--text-muted); margin-top: 4px; }
-    .popup-comment { font-size: .85rem; margin-top: 6px; font-style: italic; }
+    .leaflet-popup-tip { background: #1c1c3a !important; }
+    .leaflet-popup-content { margin: 14px 16px !important; }
+    .popup-coords { font-size: .78rem; color: #7a8a6a; margin-bottom: 10px; text-align: center; }
+    .popup-rate-btn {
+      display: block; width: 100%;
+      background: linear-gradient(135deg, #b5f542, #5dff8a);
+      border: none; border-radius: 10px;
+      color: #0d0d1a; padding: 11px 18px;
+      font-weight: 700; font-size: .92rem; cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: opacity .15s;
+    }
+    .popup-rate-btn:active { opacity: .85; }
+
+    /* User location dot (injected via Leaflet divIcon) */
+    .user-loc-dot {
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #4285f4; border: 2.5px solid #fff;
+      box-shadow: 0 0 0 4px rgba(66,133,244,.3), 0 2px 6px rgba(0,0,0,.5);
+    }
 
     #fab {
       position: absolute; bottom: 24px; right: 20px;
@@ -128,7 +141,7 @@
       -webkit-tap-highlight-color: transparent;
       display: flex; align-items: center; justify-content: center;
     }
-    #fab:active { transform: scale(.92); box-shadow: 0 2px 10px rgba(181,245,66,.25); }
+    #fab:active { transform: scale(.92); }
 
     /* ── Rate view ── */
     #rate-view { overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -157,9 +170,9 @@
 
     .loc-row { display: flex; align-items: center; gap: 12px; }
     .loc-dot {
-      width: 12px; height: 12px; border-radius: 50%;
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
       background: var(--accent); box-shadow: 0 0 10px var(--accent);
-      flex-shrink: 0; animation: pulse 1.8s ease-in-out infinite;
+      animation: pulse 1.8s ease-in-out infinite;
     }
     @keyframes pulse {
       0%,100% { box-shadow: 0 0 6px var(--accent); }
@@ -167,7 +180,8 @@
     }
     .loc-dot.waiting { background: var(--text-muted); box-shadow: none; animation: none; }
     .loc-dot.error   { background: var(--danger); box-shadow: 0 0 10px var(--danger); animation: none; }
-    #loc-text { font-size: .88rem; color: var(--text-muted); }
+    .loc-dot.map-pin { background: #4285f4; box-shadow: 0 0 10px rgba(66,133,244,.7); animation: none; }
+    #loc-text { font-size: .85rem; color: var(--text-muted); line-height: 1.4; }
     #loc-text.ready { color: var(--text); }
 
     /* Slider */
@@ -176,10 +190,12 @@
     #stink-label { font-size: 1rem; font-weight: 600; margin-top: 6px; color: var(--accent); }
 
     #stink-slider {
-      width: 100%; margin: 0; cursor: pointer;
+      width: 100%; cursor: pointer;
       -webkit-appearance: none; appearance: none;
       height: 8px; border-radius: 4px;
-      background: linear-gradient(to right, #00ff88, #b5f542, #ffcc00, #ff7a40, #ff0000);
+      background: linear-gradient(to right,
+        #00ff88 0%, #44ff66 11%, #88ee44 22%, #ccee22 33%, #eeff00 44%,
+        #ffcc00 55%, #ff8800 66%, #ff4400 77%, #ff1100 88%, #cc0000 100%);
       outline: none;
     }
     #stink-slider::-webkit-slider-thumb {
@@ -195,7 +211,6 @@
       margin-top: 8px; font-size: .7rem; color: var(--text-muted);
     }
 
-    /* Comment */
     #comment {
       width: 100%; padding: 13px 14px;
       background: var(--surface2); border: 1px solid var(--border);
@@ -209,7 +224,6 @@
     .char-count { text-align: right; font-size: .7rem; color: var(--text-muted); margin-top: 6px; }
     .char-count.warn { color: #f0c040; }
 
-    /* Submit button */
     #submit-btn {
       width: 100%; padding: 18px;
       background: linear-gradient(135deg, #b5f542, #5dff8a);
@@ -222,9 +236,8 @@
       -webkit-tap-highlight-color: transparent;
     }
     #submit-btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-    #submit-btn:not(:disabled):active { transform: scale(.97); box-shadow: 0 2px 10px rgba(181,245,66,.2); }
+    #submit-btn:not(:disabled):active { transform: scale(.97); }
 
-    /* Spinner */
     .spinner {
       width: 20px; height: 20px;
       border: 3px solid rgba(13,13,26,.4); border-top-color: #0d0d1a;
@@ -232,17 +245,13 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* My ratings list */
     .empty-msg { text-align: center; color: var(--text-muted); padding: 20px 0; font-size: .9rem; }
     .rating-item {
       display: flex; align-items: flex-start; gap: 12px;
       padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.05);
     }
     .rating-item:last-child { border-bottom: none; }
-    .ri-score {
-      font-size: 1.5rem; font-weight: 800; flex-shrink: 0;
-      min-width: 36px; text-align: center; line-height: 1.2;
-    }
+    .ri-score { font-size: 1.5rem; font-weight: 800; flex-shrink: 0; min-width: 36px; text-align: center; line-height: 1.2; }
     .ri-info { flex: 1; }
     .ri-title { font-size: .88rem; font-weight: 600; }
     .ri-meta  { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
@@ -256,7 +265,6 @@
     }
     .ri-delete:active { background: rgba(255,77,77,.15); }
 
-    /* Toast */
     #toast {
       position: fixed; bottom: calc(var(--safe-bot) + var(--tab-h) + 16px); left: 50%;
       transform: translateX(-50%) translateY(60px);
@@ -283,7 +291,7 @@
       <div class="rating-count" id="rating-count"><span id="rating-num">0</span> ratings</div>
     </div>
     <div id="leaflet-map"></div>
-    <button id="fab" title="Rate this spot">💨</button>
+    <button id="fab" title="Rate my current spot">💨</button>
   </div>
 
   <!-- RATE VIEW -->
@@ -293,12 +301,12 @@
       <div class="rate-header">
         <span class="big-emoji">💨</span>
         <h2>Rate this spot</h2>
-        <p class="rate-sub">How bad does it smell right here?</p>
+        <p class="rate-sub" id="rate-sub-text">How bad does it smell right here?</p>
       </div>
 
       <!-- Location -->
       <div class="card">
-        <div class="card-label">📍 Your location</div>
+        <div class="card-label">📍 Location to rate</div>
         <div class="loc-row">
           <div class="loc-dot waiting" id="loc-dot"></div>
           <span id="loc-text">Waiting for GPS…</span>
@@ -380,44 +388,35 @@ const firebaseConfig = {
   appId:             "1:216908791201:web:23fb8d8e70a584e4c79fe0"
 };
 
-const app         = initializeApp(firebaseConfig);
-const auth        = getAuth(app);
-const db          = getFirestore(app);
+const fbApp       = initializeApp(firebaseConfig);
+const auth        = getAuth(fbApp);
+const db          = getFirestore(fbApp);
 const ratingsCol  = collection(db, 'ratings');
 
-// ── State ─────────────────────────────────────────────────────
-let currentUser = null;
-let userPos     = null;
-let sliderVal   = 3;
-let allRatings  = [];
-
-// ── Scale (1–10) ──────────────────────────────────────────────
+// ── Scale ─────────────────────────────────────────────────────
 const LABELS = [
-  '',                    // index 0 unused
-  'Perfectly fresh',     // 1
-  'Barely anything',     // 2
-  'A slight hint',       // 3
-  'Slightly off',        // 4
-  'Noticeable',          // 5
-  'Getting bad',         // 6
-  'Pretty bad',          // 7
-  'Really stinks!',      // 8
-  'Awful',               // 9
-  'Absolutely deadly',   // 10
+  '', 'Perfectly fresh', 'Barely anything', 'A slight hint',
+  'Slightly off', 'Noticeable', 'Getting bad', 'Pretty bad',
+  'Really stinks!', 'Awful', 'Absolutely deadly'
 ];
-
+// Exact match with heatmap gradient stops (index = stink 1..10)
 const STINK_COLORS = [
   '', '#00ff88', '#44ff66', '#88ee44', '#ccee22', '#eeff00',
   '#ffcc00', '#ff8800', '#ff4400', '#ff1100', '#cc0000'
 ];
 
+// ── State ─────────────────────────────────────────────────────
+let currentUser  = null;
+let gpsPos       = null;  // live GPS (for blue dot)
+let ratingPos    = null;  // position to submit (GPS or map-clicked)
+let sliderVal    = 3;
+let allRatings   = [];
+
 // ── Helpers ───────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
 function showToast(msg, ms = 2800) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), ms);
 }
 
@@ -435,20 +434,31 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
+function getUid() {
+  if (currentUser) return currentUser.uid;
+  let uid = localStorage.getItem('stinkmap_uid');
+  if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('stinkmap_uid', uid); }
+  return uid;
+}
+
+function checkSubmitReady() {
+  $('submit-btn').disabled = !ratingPos;
+}
+
 // ── GPS ───────────────────────────────────────────────────────
-function getUserPosition() {
+function getPositionOnce() {
   return new Promise(resolve => {
     if (!navigator.geolocation) return resolve(null);
     navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: Math.round(pos.coords.accuracy) }),
-      ()  => resolve(null),
+      p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
+      () => resolve(null),
       { enableHighAccuracy: true, timeout: 12000 }
     );
   });
 }
 
 // ── Map ───────────────────────────────────────────────────────
-let map, heatLayer;
+let map, heatLayer, userMarker, userAccCircle;
 
 function initMap() {
   map = L.map('leaflet-map', { center: [20, 0], zoom: 2, zoomControl: false });
@@ -458,45 +468,67 @@ function initMap() {
     subdomains: 'abcd', maxZoom: 20
   }).addTo(map);
 
+  // Heatmap gradient — keys map linearly to stink 1–10
+  // 0.1 = stink 1 (fresh green) … 1.0 = stink 10 (deadly red)
   heatLayer = L.heatLayer([], {
     radius: 40, blur: 30, maxZoom: 17, max: 10,
     gradient: {
-      0.1: '#00ff88', 0.3: '#b5f542', 0.5: '#ffcc00',
-      0.7: '#ff7a40', 0.9: '#ff1100', 1.0: '#cc0000'
+      0.10: '#00ff88',  // 1
+      0.20: '#44ff66',  // 2
+      0.30: '#88ee44',  // 3
+      0.40: '#ccee22',  // 4
+      0.50: '#eeff00',  // 5
+      0.60: '#ffcc00',  // 6
+      0.70: '#ff8800',  // 7
+      0.80: '#ff4400',  // 8
+      0.90: '#ff1100',  // 9
+      1.00: '#cc0000'   // 10
     }
   }).addTo(map);
+
+  // ── Map click → "Rate this spot" popup ──────────────────────
+  map.on('click', e => {
+    const lat = e.latlng.lat, lng = e.latlng.lng;
+    const btnId = 'map-rate-btn-' + Date.now();
+    L.popup({ closeButton: true, maxWidth: 220 })
+      .setLatLng(e.latlng)
+      .setContent(`
+        <div class="popup-coords">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+        <button class="popup-rate-btn" id="${btnId}">💨 Rate this spot</button>
+      `)
+      .openOn(map);
+    // Attach click after popup renders
+    setTimeout(() => {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.addEventListener('click', () => {
+        map.closePopup();
+        switchTab('rate-view', { lat, lon: lng, fromMap: true });
+      });
+    }, 50);
+  });
 }
 
-// Build heatmap points: cluster ratings within ~30m,
-// use average stink as intensity.
-// Multiple nearby ratings → intensity stays as average,
-// but radius overlap from multiple points makes the blob larger.
+// Build heatmap: cluster nearby ratings (~30 m), use avg stink.
+// Multiple points in cluster → add them all at avg weight so the blob grows.
 function buildHeatPoints(ratings) {
   if (!ratings.length) return [];
-  const CLUSTER_KM = 0.03; // ~30 metres
+  const CLUSTER_KM = 0.03;
   const used = new Set();
   const points = [];
-
   for (let i = 0; i < ratings.length; i++) {
     if (used.has(i)) continue;
-    const group = [ratings[i]];
-    used.add(i);
+    const group = [ratings[i]]; used.add(i);
     for (let j = i + 1; j < ratings.length; j++) {
       if (used.has(j)) continue;
       if (haversine(ratings[i].lat, ratings[i].lon, ratings[j].lat, ratings[j].lon) < CLUSTER_KM) {
-        group.push(ratings[j]);
-        used.add(j);
+        group.push(ratings[j]); used.add(j);
       }
     }
     const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
     const lon = group.reduce((s, r) => s + r.lon, 0) / group.length;
     const avg = group.reduce((s, r) => s + r.stink, 0) / group.length;
-    const count = group.length;
-    // Add one point per rating in the cluster at the averaged position,
-    // so more ratings → bigger blob naturally in leaflet-heat
-    for (let k = 0; k < count; k++) {
-      points.push([lat, lon, avg]); // all same weight = avg
-    }
+    // One point per rating in cluster → more ratings = larger blob, avg value = colour
+    for (let k = 0; k < group.length; k++) points.push([lat, lon, avg]);
   }
   return points;
 }
@@ -506,7 +538,27 @@ function renderMap(ratings) {
   heatLayer.setLatLngs(buildHeatPoints(ratings));
 }
 
-// ── Rate View ─────────────────────────────────────────────────
+// User blue dot
+function updateUserMarker(lat, lon, acc) {
+  const ll = [lat, lon];
+  if (!userMarker) {
+    const icon = L.divIcon({
+      className: 'user-loc-dot',
+      iconSize: [16, 16], iconAnchor: [8, 8]
+    });
+    userMarker    = L.marker(ll, { icon, zIndexOffset: 1000, interactive: false }).addTo(map);
+    userAccCircle = L.circle(ll, {
+      radius: acc, color: '#4285f4', fillColor: '#4285f4',
+      fillOpacity: 0.08, weight: 1, opacity: 0.35, interactive: false
+    }).addTo(map);
+  } else {
+    userMarker.setLatLng(ll);
+    userAccCircle.setLatLng(ll);
+    userAccCircle.setRadius(acc);
+  }
+}
+
+// ── Slider ────────────────────────────────────────────────────
 function updateSlider(val) {
   sliderVal = val;
   $('stink-value').textContent = val;
@@ -515,10 +567,10 @@ function updateSlider(val) {
   $('stink-label').style.color = STINK_COLORS[val];
 }
 
+// ── My ratings ────────────────────────────────────────────────
 function renderMyRatings(ratings) {
-  const mine = currentUser
-    ? ratings.filter(r => r.uid === currentUser.uid).slice(0, 15)
-    : [];
+  const uid  = getUid();
+  const mine = ratings.filter(r => r.uid === uid).slice(0, 15);
   const list = $('my-ratings-list');
   if (!mine.length) {
     list.innerHTML = '<p class="empty-msg">You haven\'t rated anything yet.</p>';
@@ -546,47 +598,52 @@ async function deleteRating(id) {
     showToast('🗑️ Rating deleted');
   } catch (err) {
     console.error(err);
-    showToast('⚠️ Could not delete — try again');
+    showToast('⚠️ Could not delete — check connection');
   }
 }
 
-// Returns the best available uid: Firebase uid if signed in, else a persistent local uuid
-function getUid() {
-  if (currentUser) return currentUser.uid;
-  let uid = localStorage.getItem('stinkmap_uid');
-  if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('stinkmap_uid', uid); }
-  return uid;
-}
-
-function checkSubmitReady() {
-  $('submit-btn').disabled = !userPos; // only GPS required; auth is best-effort
-}
-
-async function startRateView() {
+// ── Rate view ─────────────────────────────────────────────────
+async function startRateView(override = null) {
   const dot = $('loc-dot');
+
+  if (override?.fromMap) {
+    // Position was picked by clicking the map
+    ratingPos = override;
+    dot.className = 'loc-dot map-pin';
+    $('loc-text').textContent = `${override.lat.toFixed(5)}, ${override.lon.toFixed(5)}  (selected from map)`;
+    $('loc-text').className = 'ready';
+    $('rate-sub-text').textContent = 'Rating the spot you tapped on the map.';
+    checkSubmitReady();
+    renderMyRatings(allRatings);
+    return;
+  }
+
+  // GPS flow
+  $('rate-sub-text').textContent = 'How bad does it smell right here?';
   dot.className = 'loc-dot waiting';
   $('loc-text').textContent = 'Getting your location…';
   $('loc-text').className = '';
-  userPos = null;
+  ratingPos = null;
   checkSubmitReady();
 
-  const pos = await getUserPosition();
+  const pos = await getPositionOnce();
   if (pos) {
-    userPos = pos;
+    gpsPos = pos;
+    ratingPos = pos;
     dot.className = 'loc-dot';
     $('loc-text').textContent = `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}  (±${pos.acc} m)`;
     $('loc-text').className = 'ready';
   } else {
     dot.className = 'loc-dot error';
-    $('loc-text').textContent = 'Could not get GPS location. Please allow location access.';
-    showToast('⚠️ Location access denied');
+    $('loc-text').textContent = 'No GPS — go back to the map and tap a spot to rate it.';
+    showToast('⚠️ No GPS — tap any spot on the map instead');
   }
   checkSubmitReady();
   renderMyRatings(allRatings);
 }
 
 async function submitRating() {
-  if (!userPos || !currentUser) return;
+  if (!ratingPos) return;
 
   const btn = $('submit-btn'), label = $('submit-label'), icon = $('submit-icon');
   btn.disabled = true;
@@ -595,8 +652,8 @@ async function submitRating() {
 
   try {
     await addDoc(ratingsCol, {
-      lat:     userPos.lat,
-      lon:     userPos.lon,
+      lat:     ratingPos.lat,
+      lon:     ratingPos.lon,
       stink:   sliderVal,
       comment: $('comment').value.trim(),
       ts:      Date.now(),
@@ -609,9 +666,9 @@ async function submitRating() {
     updateSlider(3);
     $('stink-slider').value = 3;
 
-    showToast(`${sliderVal}/10 — Rating submitted! Everyone can see it 🌍`);
+    showToast(`${sliderVal}/10 — Rating saved! 🌍`);
     switchTab('map-view');
-    setTimeout(() => map.setView([userPos.lat, userPos.lon], 15, { animate: true }), 150);
+    setTimeout(() => map.setView([ratingPos.lat, ratingPos.lon], 15, { animate: true }), 150);
 
   } catch (err) {
     console.error(err);
@@ -629,9 +686,7 @@ function subscribeToRatings() {
   onSnapshot(q, snapshot => {
     allRatings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     renderMap(allRatings);
-    if ($('rate-view').classList.contains('active')) {
-      renderMyRatings(allRatings);
-    }
+    if ($('rate-view').classList.contains('active')) renderMyRatings(allRatings);
   }, err => {
     console.error(err);
     showToast('⚠️ Could not load ratings — check connection.', 4000);
@@ -639,18 +694,20 @@ function subscribeToRatings() {
 }
 
 // ── Tabs ──────────────────────────────────────────────────────
-function switchTab(viewId) {
+function switchTab(viewId, mapPos = null) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById(viewId).classList.add('active');
   document.querySelector(`.tab[data-view="${viewId}"]`).classList.add('active');
-  if (viewId === 'rate-view') startRateView();
+  if (viewId === 'rate-view') startRateView(mapPos);
   if (viewId === 'map-view')  setTimeout(() => map && map.invalidateSize(), 80);
 }
 
 // ── Events ────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.view)));
-$('fab').addEventListener('click', () => switchTab('rate-view'));
+document.querySelectorAll('.tab').forEach(t =>
+  t.addEventListener('click', () => switchTab(t.dataset.view)));
+
+$('fab').addEventListener('click', () => switchTab('rate-view', null));  // GPS
 $('stink-slider').addEventListener('input', e => updateSlider(+e.target.value));
 $('comment').addEventListener('input', e => {
   const n = e.target.value.length;
@@ -664,17 +721,22 @@ updateSlider(3);
 initMap();
 subscribeToRatings();
 
-// Anonymous auth — gives each user a persistent uid for ownership
-onAuthStateChanged(auth, user => {
-  currentUser = user;
-  checkSubmitReady();
-});
+// Anonymous auth
+onAuthStateChanged(auth, user => { currentUser = user; });
 signInAnonymously(auth).catch(console.error);
 
-// Fly to user location
-getUserPosition().then(pos => {
-  if (pos && map) map.setView([pos.lat, pos.lon], 12, { animate: true });
-});
+// Live GPS → blue dot on map
+if (navigator.geolocation) {
+  navigator.geolocation.watchPosition(position => {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+    const acc = Math.round(position.coords.accuracy);
+    gpsPos = { lat, lon, acc };
+    if (map) updateUserMarker(lat, lon, acc);
+    // First fix: fly map to user
+    if (!userMarker && map) map.setView([lat, lon], 12, { animate: true });
+  }, null, { enableHighAccuracy: true, maximumAge: 10000 });
+}
 
 // PWA
 if ('serviceWorker' in navigator) {
