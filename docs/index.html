@@ -425,11 +425,31 @@
 <!-- Leaflet.heat -->
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
-<script>
+<script type="module">
+// ──────────────────────────────────────────────────────────────
+// Firebase
+// ──────────────────────────────────────────────────────────────
+import { initializeApp }           from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getFirestore, collection,
+         addDoc, onSnapshot,
+         query, orderBy, limit }   from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyC_40kkX7noNP4sCiphkla-n2yoaykTDfE",
+  authDomain:        "stinkmap.firebaseapp.com",
+  projectId:         "stinkmap",
+  storageBucket:     "stinkmap.firebasestorage.app",
+  messagingSenderId: "216908791201",
+  appId:             "1:216908791201:web:23fb8d8e70a584e4c79fe0"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const db          = getFirestore(firebaseApp);
+const ratingsCol  = collection(db, 'ratings');
+
 // ──────────────────────────────────────────────────────────────
 // Constants & helpers
 // ──────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'stinkmap_ratings';
 
 const SCALES = [
   { emoji: '🌸', label: 'Fresh air',          color: '#5dff8a' },
@@ -453,20 +473,6 @@ function formatDate(ts) {
     day: '2-digit', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
-}
-
-// ──────────────────────────────────────────────────────────────
-// Storage
-// ──────────────────────────────────────────────────────────────
-function loadRatings() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-  catch { return []; }
-}
-
-function saveRating(entry) {
-  const ratings = loadRatings();
-  ratings.unshift(entry); // newest first
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(ratings));
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -505,45 +511,27 @@ function initMap() {
   }).addTo(map);
 
   heatLayer = L.heatLayer([], {
-    radius: 35,
-    blur: 25,
-    maxZoom: 17,
-    max: 5,
-    gradient: {
-      0.2: '#5dff8a',
-      0.4: '#b5f542',
-      0.6: '#f0c040',
-      0.8: '#ff7a40',
-      1.0: '#ff3030'
-    }
+    radius: 35, blur: 25, maxZoom: 17, max: 5,
+    gradient: { 0.2: '#5dff8a', 0.4: '#b5f542', 0.6: '#f0c040', 0.8: '#ff7a40', 1.0: '#ff3030' }
   }).addTo(map);
 
   markersLayer = L.layerGroup().addTo(map);
-  renderMap();
 }
 
-function renderMap() {
-  const ratings = loadRatings();
+function renderMap(ratings) {
   $('rating-num').textContent = ratings.length;
 
   // Update heatmap
-  const points = ratings.map(r => [r.lat, r.lon, r.stink]);
-  heatLayer.setLatLngs(points);
+  heatLayer.setLatLngs(ratings.map(r => [r.lat, r.lon, r.stink]));
 
-  // Clear & re-add click markers
+  // Clear & re-add markers
   markersLayer.clearLayers();
   for (const r of ratings) {
     const sc = SCALES[r.stink - 1];
     const icon = L.divIcon({
       className: '',
-      html: `<div style="
-        font-size:1.6rem; line-height:1;
-        filter: drop-shadow(0 2px 6px rgba(0,0,0,.6));
-        cursor: pointer;
-      ">${sc.emoji}</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -34]
+      html: `<div style="font-size:1.6rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.6));cursor:pointer">${sc.emoji}</div>`,
+      iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -34]
     });
     const marker = L.marker([r.lat, r.lon], { icon });
     marker.bindPopup(`
@@ -560,6 +548,7 @@ function renderMap() {
 // Rate View
 // ──────────────────────────────────────────────────────────────
 let sliderVal = 2;
+let allRatings = []; // kept in sync by Firestore snapshot
 
 function updateSlider(val) {
   sliderVal = val;
@@ -569,14 +558,13 @@ function updateSlider(val) {
   $('stink-label').style.color = sc.color;
 }
 
-function renderRecent() {
-  const ratings = loadRatings();
+function renderRecent(ratings) {
   const list = $('recent-list');
   if (!ratings.length) {
-    list.innerHTML = '<p class="empty-msg">No ratings yet. Be the first!</p>';
+    list.innerHTML = '<p class="empty-msg">No ratings yet worldwide. Be the first! 🌍</p>';
     return;
   }
-  list.innerHTML = ratings.slice(0, 8).map(r => {
+  list.innerHTML = ratings.slice(0, 10).map(r => {
     const sc = SCALES[r.stink - 1];
     return `
       <div class="rating-item">
@@ -591,7 +579,6 @@ function renderRecent() {
 }
 
 async function startRateView() {
-  // Reset GPS indicator
   const dot = $('loc-dot');
   dot.className = 'loc-dot waiting';
   $('loc-text').textContent = 'Getting your location…';
@@ -599,7 +586,6 @@ async function startRateView() {
   $('submit-btn').disabled = true;
   userPos = null;
 
-  // Request GPS
   const pos = await getUserPosition();
   if (pos) {
     userPos = pos;
@@ -612,52 +598,67 @@ async function startRateView() {
     $('loc-text').textContent = 'Could not get GPS location. Please allow location access.';
     showToast('⚠️ Location access denied — cannot rate this spot');
   }
-  renderRecent();
+  renderRecent(allRatings);
 }
 
 async function submitRating() {
   if (!userPos) return;
 
-  const btn = $('submit-btn');
+  const btn   = $('submit-btn');
   const label = $('submit-label');
-  const icon = $('submit-icon');
+  const icon  = $('submit-icon');
   btn.disabled = true;
   icon.innerHTML = '<div class="spinner"></div>';
-  label.textContent = 'Submitting…';
+  label.textContent = 'Saving to Firestore…';
 
-  // Small artificial delay for feedback
-  await new Promise(r => setTimeout(r, 600));
+  try {
+    await addDoc(ratingsCol, {
+      lat:     userPos.lat,
+      lon:     userPos.lon,
+      stink:   sliderVal,
+      comment: $('comment').value.trim(),
+      ts:      Date.now()
+    });
 
-  const entry = {
-    lat: userPos.lat,
-    lon: userPos.lon,
-    stink: sliderVal,
-    comment: $('comment').value.trim(),
-    ts: Date.now()
-  };
+    // Reset UI
+    $('comment').value = '';
+    $('char-count').textContent = '0 / 100';
+    $('char-count').className = 'char-count';
+    updateSlider(2);
+    $('stink-slider').value = 2;
 
-  saveRating(entry);
-  renderRecent();
-  renderMap();
+    showToast(`${SCALES[sliderVal - 1].emoji}  Rating submitted — everyone can see it!`);
 
-  // Reset UI
-  $('comment').value = '';
-  $('char-count').textContent = '0 / 100';
-  $('char-count').className = 'char-count';
-  updateSlider(2);
-  $('stink-slider').value = 2;
+    // Fly to submitted spot then switch to map
+    switchTab('map-view');
+    setTimeout(() => map.setView([userPos.lat, userPos.lon], 15, { animate: true }), 150);
 
-  icon.textContent = '💨';
-  label.textContent = 'Submit Stink Rating';
-  btn.disabled = false;
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Could not save — check your connection.');
+  } finally {
+    icon.textContent = '💨';
+    label.textContent = 'Submit Stink Rating';
+    btn.disabled = !userPos;
+  }
+}
 
-  showToast(`${SCALES[entry.stink - 1].emoji}  Rating submitted!`);
-
-  // Fly to submitted spot on map and switch to map tab
-  switchTab('map-view');
-  setTimeout(() => {
-    map.setView([entry.lat, entry.lon], 15, { animate: true });
-  }, 150);
+// ──────────────────────────────────────────────────────────────
+// Firestore real-time listener
+// ──────────────────────────────────────────────────────────────
+function subscribeToRatings() {
+  const q = query(ratingsCol, orderBy('ts', 'desc'), limit(1000));
+  onSnapshot(q, snapshot => {
+    allRatings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    renderMap(allRatings);
+    // Only update recent list if Rate tab is visible
+    if (document.getElementById('rate-view').classList.contains('active')) {
+      renderRecent(allRatings);
+    }
+  }, err => {
+    console.error('Firestore snapshot error:', err);
+    showToast('⚠️ Could not load ratings — check connection.', 4000);
+  });
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -697,12 +698,11 @@ $('submit-btn').addEventListener('click', submitRating);
 // ──────────────────────────────────────────────────────────────
 updateSlider(2);
 initMap();
+subscribeToRatings(); // starts the live Firestore listener
 
-// Try to fly to user's location on first load
+// Fly to user's location on first load
 getUserPosition().then(pos => {
-  if (pos && map) {
-    map.setView([pos.lat, pos.lon], 12, { animate: true });
-  }
+  if (pos && map) map.setView([pos.lat, pos.lon], 12, { animate: true });
 });
 
 // PWA service worker
