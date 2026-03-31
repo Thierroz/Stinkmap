@@ -550,8 +550,16 @@ async function deleteRating(id) {
   }
 }
 
+// Returns the best available uid: Firebase uid if signed in, else a persistent local uuid
+function getUid() {
+  if (currentUser) return currentUser.uid;
+  let uid = localStorage.getItem('stinkmap_uid');
+  if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('stinkmap_uid', uid); }
+  return uid;
+}
+
 function checkSubmitReady() {
-  $('submit-btn').disabled = !(userPos && currentUser);
+  $('submit-btn').disabled = !userPos; // only GPS required; auth is best-effort
 }
 
 async function startRateView() {
@@ -592,7 +600,7 @@ async function submitRating() {
       stink:   sliderVal,
       comment: $('comment').value.trim(),
       ts:      Date.now(),
-      uid:     currentUser.uid
+      uid:     getUid()
     });
 
     $('comment').value = '';
