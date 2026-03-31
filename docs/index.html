@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Stinkmap" />
-  <meta name="description" content="Rate how stinky a place is and see the world's stink heatmap." />
+  <meta name="description" content="The world's stink heatmap — rate smelly places and see what others say." />
   <title>Stinkmap</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icon-512.png" />
@@ -18,259 +18,266 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:         #0d0d1a;
-      --surface:    #13132a;
-      --surface2:   #1c1c3a;
-      --border:     rgba(181,245,66,.15);
-      --accent:     #b5f542;
-      --accent-dim: rgba(181,245,66,.18);
-      --text:       #e8ffe0;
-      --text-muted: #7a8a6a;
-      --danger:     #ff4d4d;
-      --radius:     18px;
-      --safe-top:   env(safe-area-inset-top, 0px);
-      --safe-bot:   env(safe-area-inset-bottom, 0px);
-      --tab-h:      68px;
+      --bg:        #0d0d1a;
+      --surface:   #13132a;
+      --surface2:  #1c1c3a;
+      --border:    rgba(181,245,66,.15);
+      --accent:    #b5f542;
+      --text:      #e8ffe0;
+      --muted:     #7a8a6a;
+      --danger:    #ff4d4d;
+      --radius:    18px;
+      --safe-top:  env(safe-area-inset-top, 0px);
+      --safe-bot:  env(safe-area-inset-bottom, 0px);
+      --tab-h:     68px;
+      --header-h:  62px;
     }
 
-    html, body {
-      height: 100%; height: 100dvh;
-      font-family: 'Inter', system-ui, sans-serif;
-      background: var(--bg); color: var(--text);
-      overflow: hidden;
+    html, body { height: 100dvh; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; }
+
+    /* ── Persistent map layer ─────────────────────────────── */
+    #leaflet-map {
+      position: fixed;
+      top: calc(var(--safe-top) + var(--header-h));
+      left: 0; right: 0;
+      bottom: var(--tab-h);
+      z-index: 0;
     }
 
-    body::before {
-      content: '';
-      position: fixed; inset: 0; z-index: 0;
-      background:
-        radial-gradient(ellipse 70% 50% at 15% -5%,  rgba(181,245,66,.10) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 40% at 85% 105%, rgba(80,200,60,.08) 0%, transparent 60%),
-        var(--bg);
-      pointer-events: none;
-    }
-
-    #app { position: relative; z-index: 1; display: flex; flex-direction: column; height: 100dvh; }
-
-    .view { flex: 1; overflow: hidden; display: none; flex-direction: column; }
-    .view.active { display: flex; }
-
-    /* ── Tab bar ── */
-    #tabbar {
-      height: var(--tab-h); padding-bottom: var(--safe-bot);
-      background: rgba(13,13,26,.95); backdrop-filter: blur(16px);
-      border-top: 1px solid var(--border);
-      display: flex; flex-shrink: 0; z-index: 100;
-    }
-    .tab {
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 4px;
-      cursor: pointer; border: none; background: none;
-      color: var(--text-muted); font-family: inherit;
-      font-size: .72rem; font-weight: 500; letter-spacing: .04em;
-      transition: color .2s; -webkit-tap-highlight-color: transparent;
-    }
-    .tab .tab-icon { font-size: 1.55rem; transition: transform .2s; }
-    .tab.active { color: var(--accent); }
-    .tab.active .tab-icon { transform: scale(1.15); }
-
-    /* ── Map view ── */
-    #map-view { position: relative; }
-    #map-header {
-      padding: calc(var(--safe-top) + 14px) 20px 12px;
+    /* ── Header ───────────────────────────────────────────── */
+    #header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      height: calc(var(--safe-top) + var(--header-h));
+      padding: calc(var(--safe-top) + 12px) 20px 12px;
       display: flex; align-items: center; justify-content: space-between;
-      background: rgba(13,13,26,.88); backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border); flex-shrink: 0;
+      background: rgba(13,13,26,.92); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
     }
-    .map-title { display: flex; align-items: center; gap: 10px; }
+    .logo-row { display: flex; align-items: center; gap: 10px; }
     .logo-img {
-      width: 36px; height: 36px;
-      filter: drop-shadow(0 0 10px rgba(181,245,66,.6));
+      width: 32px; height: 32px;
+      filter: drop-shadow(0 0 8px rgba(181,245,66,.6));
       animation: float 3.5s ease-in-out infinite;
     }
-    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-    h1 {
-      font-size: 1.3rem; font-weight: 700;
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    #app-title {
+      font-size: 1.2rem; font-weight: 700;
       background: linear-gradient(135deg, #b5f542, #5dff8a);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
-    .rating-count {
-      font-size: .75rem; color: var(--text-muted);
-      background: var(--accent-dim); border: 1px solid var(--border);
+    #rating-count {
+      font-size: .75rem; color: var(--muted);
+      background: rgba(181,245,66,.1); border: 1px solid var(--border);
       border-radius: 20px; padding: 4px 12px;
     }
-    .rating-count span { color: var(--accent); font-weight: 600; }
+    #rating-count span { color: var(--accent); font-weight: 600; }
 
-    #leaflet-map { flex: 1; z-index: 1; }
+    /* ── Tab bar ──────────────────────────────────────────── */
+    #tabbar {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      height: var(--tab-h); padding-bottom: var(--safe-bot);
+      background: rgba(13,13,26,.95); backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border);
+      display: flex;
+    }
+    .tab {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 3px;
+      border: none; background: none; cursor: pointer;
+      color: var(--muted); font-family: inherit;
+      font-size: .68rem; font-weight: 500; letter-spacing: .04em;
+      transition: color .2s; -webkit-tap-highlight-color: transparent;
+    }
+    .tab .ti { font-size: 1.45rem; transition: transform .2s; }
+    .tab.active { color: var(--accent); }
+    .tab.active .ti { transform: scale(1.15); }
 
-    /* Popup styles — injected into Leaflet */
+    /* ── Mode hint (shown on map) ─────────────────────────── */
+    #mode-hint {
+      position: fixed; bottom: calc(var(--tab-h) + 14px); left: 50%;
+      transform: translateX(-50%);
+      background: rgba(13,13,26,.88); backdrop-filter: blur(8px);
+      border: 1px solid var(--border); border-radius: 30px;
+      padding: 8px 18px; font-size: .78rem; color: var(--muted);
+      z-index: 100; pointer-events: none;
+      transition: opacity .3s;
+    }
+    #mode-hint.hidden { opacity: 0; }
+
+    /* ── Comment popup (Stink Map tap) ───────────────────── */
     .leaflet-popup-content-wrapper {
       background: #1c1c3a !important; border: 1px solid rgba(181,245,66,.2) !important;
-      color: #e8ffe0 !important; border-radius: 14px !important;
-      font-family: 'Inter', sans-serif !important; box-shadow: 0 8px 30px rgba(0,0,0,.6) !important;
+      color: #e8ffe0 !important; border-radius: 16px !important;
+      font-family: 'Inter', sans-serif !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,.7) !important;
     }
     .leaflet-popup-tip { background: #1c1c3a !important; }
-    .leaflet-popup-content { margin: 14px 16px !important; }
-    .popup-coords { font-size: .78rem; color: #7a8a6a; margin-bottom: 10px; text-align: center; }
-    .popup-rate-btn {
-      display: block; width: 100%;
-      background: linear-gradient(135deg, #b5f542, #5dff8a);
-      border: none; border-radius: 10px;
-      color: #0d0d1a; padding: 11px 18px;
-      font-weight: 700; font-size: .92rem; cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: opacity .15s;
+    .leaflet-popup-content { margin: 14px 16px !important; min-width: 200px; }
+    .pop-avg {
+      text-align: center; margin-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07); padding-bottom: 10px;
     }
-    .popup-rate-btn:active { opacity: .85; }
+    .pop-avg-score { font-size: 2.4rem; font-weight: 800; line-height: 1; }
+    .pop-avg-label { font-size: .75rem; color: var(--muted); margin-top: 3px; }
+    .pop-count { font-size: .7rem; color: var(--muted); margin-bottom: 10px; }
+    .pop-entry { padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.05); display: flex; gap: 10px; align-items: flex-start; }
+    .pop-entry:last-child { border-bottom: none; }
+    .pop-score { font-size: 1rem; font-weight: 700; flex-shrink: 0; min-width: 22px; }
+    .pop-text { font-size: .8rem; color: var(--muted); }
+    .pop-comment { color: var(--text); font-style: italic; }
+    .pop-empty { font-size: .82rem; color: var(--muted); text-align: center; padding: 8px 0; }
 
-    /* User location dot (injected via Leaflet divIcon) */
+    /* User loc dot */
     .user-loc-dot {
       width: 16px; height: 16px; border-radius: 50%;
       background: #4285f4; border: 2.5px solid #fff;
       box-shadow: 0 0 0 4px rgba(66,133,244,.3), 0 2px 6px rgba(0,0,0,.5);
     }
 
-    #fab {
-      position: absolute; bottom: 24px; right: 20px;
-      width: 60px; height: 60px; border-radius: 50%;
-      background: linear-gradient(135deg, #b5f542, #5dff8a);
-      border: none; font-size: 1.6rem;
-      box-shadow: 0 4px 20px rgba(181,245,66,.45);
-      cursor: pointer; z-index: 500;
-      transition: transform .15s, box-shadow .2s;
-      -webkit-tap-highlight-color: transparent;
-      display: flex; align-items: center; justify-content: center;
+    /* ── Rate bottom sheet ────────────────────────────────── */
+    #rate-sheet {
+      position: fixed; bottom: var(--tab-h); left: 0; right: 0; z-index: 150;
+      background: var(--surface2);
+      border-top: 1px solid rgba(181,245,66,.25);
+      border-radius: 20px 20px 0 0;
+      padding: 16px 20px calc(var(--safe-bot) + 16px);
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.32,1,.6,1);
+      box-shadow: 0 -8px 40px rgba(0,0,0,.6);
     }
-    #fab:active { transform: scale(.92); }
+    #rate-sheet.open { transform: translateY(0); }
 
-    /* ── Rate view ── */
-    #rate-view { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    .rate-inner {
-      max-width: 480px; margin: 0 auto;
-      padding: calc(var(--safe-top) + 24px) 20px calc(var(--safe-bot) + 100px);
-      display: flex; flex-direction: column; gap: 16px;
+    .sheet-handle {
+      width: 36px; height: 4px; border-radius: 2px;
+      background: rgba(255,255,255,.2); margin: 0 auto 14px;
     }
-    .rate-header { text-align: center; margin-bottom: 8px; }
-    .rate-header .big-emoji { font-size: 3.5rem; display: block; animation: float 3s ease-in-out infinite; }
-    h2 {
-      font-size: 1.5rem; font-weight: 700; margin-top: 10px;
-      background: linear-gradient(135deg, #b5f542, #5dff8a);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    .sheet-loc {
+      font-size: .78rem; color: var(--muted);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
     }
-    .rate-sub { font-size: .82rem; color: var(--text-muted); margin-top: 4px; }
+    .sheet-loc-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+      box-shadow: 0 0 6px var(--accent); flex-shrink: 0;
+    }
+    .sheet-loc-dot.map-pin { background: #4285f4; box-shadow: 0 0 6px #4285f4; }
 
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px; backdrop-filter: blur(8px);
-    }
-    .card-label {
-      font-size: .72rem; font-weight: 600; letter-spacing: .08em;
-      text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px;
-    }
-
-    .loc-row { display: flex; align-items: center; gap: 12px; }
-    .loc-dot {
-      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent); box-shadow: 0 0 10px var(--accent);
-      animation: pulse 1.8s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%,100% { box-shadow: 0 0 6px var(--accent); }
-      50%      { box-shadow: 0 0 18px rgba(181,245,66,.8); }
-    }
-    .loc-dot.waiting { background: var(--text-muted); box-shadow: none; animation: none; }
-    .loc-dot.error   { background: var(--danger); box-shadow: 0 0 10px var(--danger); animation: none; }
-    .loc-dot.map-pin { background: #4285f4; box-shadow: 0 0 10px rgba(66,133,244,.7); animation: none; }
-    #loc-text { font-size: .85rem; color: var(--text-muted); line-height: 1.4; }
-    #loc-text.ready { color: var(--text); }
-
-    /* Slider */
-    .scale-display { text-align: center; margin-bottom: 16px; }
-    #stink-value { font-size: 3.8rem; font-weight: 800; line-height: 1; color: var(--accent); }
-    #stink-label { font-size: 1rem; font-weight: 600; margin-top: 6px; color: var(--accent); }
-
-    #stink-slider {
+    /* Slider in sheet */
+    .scale-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .scale-big { font-size: 2.8rem; font-weight: 800; min-width: 52px; text-align: center; line-height: 1; }
+    .scale-info { flex: 1; }
+    .scale-name { font-size: .92rem; font-weight: 600; }
+    #sheet-slider {
       width: 100%; cursor: pointer;
       -webkit-appearance: none; appearance: none;
       height: 8px; border-radius: 4px;
       background: linear-gradient(to right,
         #00ff88 0%, #44ff66 11%, #88ee44 22%, #ccee22 33%, #eeff00 44%,
         #ffcc00 55%, #ff8800 66%, #ff4400 77%, #ff1100 88%, #cc0000 100%);
-      outline: none;
+      outline: none; margin-bottom: 4px;
     }
-    #stink-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 30px; height: 30px; border-radius: 50%;
+    #sheet-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
       background: #fff; cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,.5), 0 0 0 3px var(--accent);
       transition: transform .1s;
     }
-    #stink-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
-    .scale-labels {
-      display: flex; justify-content: space-between;
-      margin-top: 8px; font-size: .7rem; color: var(--text-muted);
-    }
+    #sheet-slider:active::-webkit-slider-thumb { transform: scale(1.2); }
+    .scale-ends { display: flex; justify-content: space-between; font-size: .67rem; color: var(--muted); margin-bottom: 12px; }
 
-    #comment {
-      width: 100%; padding: 13px 14px;
-      background: var(--surface2); border: 1px solid var(--border);
+    #sheet-comment {
+      width: 100%; padding: 11px 14px;
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: 12px; color: var(--text);
-      font-size: .95rem; font-family: inherit;
+      font-size: .9rem; font-family: inherit;
       outline: none; resize: none; transition: border-color .2s;
       -webkit-appearance: none; appearance: none;
+      margin-bottom: 12px;
     }
-    #comment::placeholder { color: var(--text-muted); }
-    #comment:focus { border-color: var(--accent); }
-    .char-count { text-align: right; font-size: .7rem; color: var(--text-muted); margin-top: 6px; }
-    .char-count.warn { color: #f0c040; }
+    #sheet-comment::placeholder { color: var(--muted); }
+    #sheet-comment:focus { border-color: var(--accent); }
 
-    #submit-btn {
-      width: 100%; padding: 18px;
+    .sheet-btns { display: flex; gap: 10px; }
+    #sheet-cancel {
+      padding: 14px 20px; border-radius: 12px;
+      background: none; border: 1px solid rgba(255,255,255,.12);
+      color: var(--muted); font-family: inherit; font-size: .9rem;
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    #sheet-submit {
+      flex: 1; padding: 14px;
       background: linear-gradient(135deg, #b5f542, #5dff8a);
-      border: none; border-radius: var(--radius);
-      color: #0d0d1a; font-size: 1.1rem; font-weight: 700;
-      letter-spacing: .02em; cursor: pointer;
-      box-shadow: 0 4px 22px rgba(181,245,66,.35);
-      transition: opacity .2s, transform .15s, box-shadow .2s;
-      display: flex; align-items: center; justify-content: center; gap: 10px;
+      border: none; border-radius: 12px;
+      color: #0d0d1a; font-size: 1rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
       -webkit-tap-highlight-color: transparent;
+      transition: opacity .2s;
     }
-    #submit-btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
-    #submit-btn:not(:disabled):active { transform: scale(.97); }
+    #sheet-submit:disabled { opacity: .45; cursor: not-allowed; }
 
-    .spinner {
-      width: 20px; height: 20px;
-      border: 3px solid rgba(13,13,26,.4); border-top-color: #0d0d1a;
-      border-radius: 50%; animation: spin .7s linear infinite;
+    /* ── My Ratings overlay ───────────────────────────────── */
+    #mine-panel {
+      position: fixed;
+      top: calc(var(--safe-top) + var(--header-h));
+      left: 0; right: 0;
+      bottom: var(--tab-h);
+      z-index: 150;
+      background: var(--bg);
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 20px 20px calc(var(--safe-bot) + 20px);
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.32,1,.6,1);
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    #mine-panel.open { transform: translateY(0); }
 
-    .empty-msg { text-align: center; color: var(--text-muted); padding: 20px 0; font-size: .9rem; }
+    .mine-header { margin-bottom: 18px; }
+    .mine-title { font-size: 1.2rem; font-weight: 700; color: var(--accent); }
+    .mine-sub { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+
+    .empty-msg { text-align: center; color: var(--muted); padding: 48px 0; font-size: .9rem; }
+
     .rating-item {
       display: flex; align-items: flex-start; gap: 12px;
       padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.05);
+      max-width: 480px; margin: 0 auto;
     }
     .rating-item:last-child { border-bottom: none; }
     .ri-score { font-size: 1.5rem; font-weight: 800; flex-shrink: 0; min-width: 36px; text-align: center; line-height: 1.2; }
     .ri-info { flex: 1; }
     .ri-title { font-size: .88rem; font-weight: 600; }
-    .ri-meta  { font-size: .72rem; color: var(--text-muted); margin-top: 2px; }
-    .ri-comment { font-size: .8rem; color: var(--text-muted); margin-top: 4px; font-style: italic; }
+    .ri-meta  { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+    .ri-comment { font-size: .8rem; color: var(--muted); margin-top: 4px; font-style: italic; }
+    .ri-loc-btn {
+      background: rgba(181,245,66,.1); border: 1px solid var(--border);
+      color: var(--accent); border-radius: 8px;
+      padding: 5px 10px; font-size: .7rem; cursor: pointer;
+      -webkit-tap-highlight-color: transparent; flex-shrink: 0; align-self: center;
+      transition: background .2s;
+    }
+    .ri-loc-btn:active { background: rgba(181,245,66,.2); }
     .ri-delete {
       background: none; border: 1px solid rgba(255,77,77,.3);
       color: var(--danger); border-radius: 8px;
-      padding: 5px 10px; font-size: .72rem; cursor: pointer;
+      padding: 5px 10px; font-size: .7rem; cursor: pointer;
       transition: background .2s; flex-shrink: 0; align-self: center;
       -webkit-tap-highlight-color: transparent;
     }
     .ri-delete:active { background: rgba(255,77,77,.15); }
 
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 3px solid rgba(13,13,26,.4); border-top-color: #0d0d1a;
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Toast */
     #toast {
-      position: fixed; bottom: calc(var(--safe-bot) + var(--tab-h) + 16px); left: 50%;
+      position: fixed; bottom: calc(var(--safe-bot) + var(--tab-h) + 14px); left: 50%;
       transform: translateX(-50%) translateY(60px);
       background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 40px; padding: 12px 24px;
-      font-size: .88rem; font-weight: 500;
+      border-radius: 40px; padding: 11px 22px;
+      font-size: .86rem; font-weight: 500;
       transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
       opacity: 0; pointer-events: none; white-space: nowrap;
       box-shadow: 0 8px 30px rgba(0,0,0,.4); z-index: 9999;
@@ -279,119 +286,95 @@
   </style>
 </head>
 <body>
-<div id="app">
 
-  <!-- MAP VIEW -->
-  <div class="view active" id="map-view">
-    <div id="map-header">
-      <div class="map-title">
-        <img class="logo-img" src="icon-512.png" alt="Stinkmap logo" />
-        <h1>Stinkmap</h1>
-      </div>
-      <div class="rating-count" id="rating-count"><span id="rating-num">0</span> ratings</div>
+  <!-- Header (always visible) -->
+  <div id="header">
+    <div class="logo-row">
+      <img class="logo-img" src="icon-512.png" alt="" />
+      <span id="app-title">Stinkmap</span>
     </div>
-    <div id="leaflet-map"></div>
-    <button id="fab" title="Rate my current spot">💨</button>
+    <div id="rating-count"><span id="rating-num">0</span> ratings</div>
   </div>
 
-  <!-- RATE VIEW -->
-  <div class="view" id="rate-view">
-    <div class="rate-inner">
+  <!-- Map (always rendered) -->
+  <div id="leaflet-map"></div>
 
-      <div class="rate-header">
-        <span class="big-emoji">💨</span>
-        <h2>Rate this spot</h2>
-        <p class="rate-sub" id="rate-sub-text">How bad does it smell right here?</p>
+  <!-- Mode hint -->
+  <div id="mode-hint">Tap the map to see stink details</div>
+
+  <!-- Rate bottom sheet -->
+  <div id="rate-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-loc">
+      <div class="sheet-loc-dot" id="sheet-loc-dot"></div>
+      <span id="sheet-loc-text">…</span>
+    </div>
+    <div class="scale-row">
+      <div class="scale-big" id="sheet-score">3</div>
+      <div class="scale-info">
+        <div class="scale-name" id="sheet-label">A slight hint</div>
+        <input type="range" id="sheet-slider" min="1" max="10" value="3" step="1" />
+        <div class="scale-ends"><span>🌸 Fresh</span><span>💀 Deadly</span></div>
       </div>
-
-      <!-- Location -->
-      <div class="card">
-        <div class="card-label">📍 Location to rate</div>
-        <div class="loc-row">
-          <div class="loc-dot waiting" id="loc-dot"></div>
-          <span id="loc-text">Waiting for GPS…</span>
-        </div>
-      </div>
-
-      <!-- Stink scale 1-10 -->
-      <div class="card">
-        <div class="card-label">👃 Stink intensity (1–10)</div>
-        <div class="scale-display">
-          <span id="stink-value">3</span>
-          <div id="stink-label">A slight hint</div>
-        </div>
-        <input type="range" id="stink-slider" min="1" max="10" value="3" step="1" />
-        <div class="scale-labels">
-          <span>1 — 🌸 Fresh</span>
-          <span>💀 Deadly — 10</span>
-        </div>
-      </div>
-
-      <!-- Comment -->
-      <div class="card">
-        <div class="card-label">💬 What does it smell like? (optional)</div>
-        <textarea id="comment" rows="3" maxlength="100" placeholder="e.g. Fish market, garbage, wet dog…"></textarea>
-        <div class="char-count" id="char-count">0 / 100</div>
-      </div>
-
-      <!-- Submit -->
-      <button id="submit-btn" disabled>
-        <span id="submit-icon">💨</span>
-        <span id="submit-label">Submit Stink Rating</span>
+    </div>
+    <textarea id="sheet-comment" rows="2" maxlength="100" placeholder="What does it smell like? (optional)"></textarea>
+    <div class="sheet-btns">
+      <button id="sheet-cancel">Cancel</button>
+      <button id="sheet-submit">
+        <span id="sheet-submit-icon">💨</span>
+        <span id="sheet-submit-label">Submit</span>
       </button>
-
-      <!-- My ratings -->
-      <div class="card">
-        <div class="card-label">🗑️ My ratings — tap to delete</div>
-        <div id="my-ratings-list"><p class="empty-msg">You haven't rated anything yet.</p></div>
-      </div>
-
     </div>
   </div>
 
-  <!-- TAB BAR -->
+  <!-- My Ratings overlay -->
+  <div id="mine-panel">
+    <div class="mine-header">
+      <div class="mine-title">💨 My Ratings</div>
+      <div class="mine-sub">Tap 📍 to fly to a rating on the map</div>
+    </div>
+    <div id="mine-list"><p class="empty-msg">You haven't rated anything yet.</p></div>
+  </div>
+
+  <!-- Tab bar -->
   <nav id="tabbar">
-    <button class="tab active" id="tab-map" data-view="map-view">
-      <span class="tab-icon">🗺️</span>
-      <span>Stink Map</span>
+    <button class="tab active" data-mode="stink">
+      <span class="ti">🗺️</span><span>Stink Map</span>
     </button>
-    <button class="tab" id="tab-rate" data-view="rate-view">
-      <span class="tab-icon">💨</span>
-      <span>Rate Spot</span>
+    <button class="tab" data-mode="rate">
+      <span class="ti">💨</span><span>Rate</span>
+    </button>
+    <button class="tab" data-mode="mine">
+      <span class="ti">👤</span><span>My Ratings</span>
     </button>
   </nav>
-</div>
 
-<div id="toast"></div>
+  <div id="toast"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 
 <script type="module">
-import { initializeApp }      from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-import { getAuth,
-         signInAnonymously,
-         onAuthStateChanged }  from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
-import { getFirestore,
-         collection, addDoc,
+import { initializeApp }     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getAuth, signInAnonymously,
+         onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
+import { getFirestore, collection, addDoc,
          deleteDoc, doc,
          onSnapshot, query,
-         orderBy, limit }      from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
+         orderBy, limit }     from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
 
 // ── Firebase ──────────────────────────────────────────────────
-const firebaseConfig = {
+const fbApp = initializeApp({
   apiKey:            "AIzaSyC_40kkX7noNP4sCiphkla-n2yoaykTDfE",
   authDomain:        "stinkmap.firebaseapp.com",
   projectId:         "stinkmap",
   storageBucket:     "stinkmap.firebasestorage.app",
   messagingSenderId: "216908791201",
   appId:             "1:216908791201:web:23fb8d8e70a584e4c79fe0"
-};
-
-const fbApp       = initializeApp(firebaseConfig);
-const auth        = getAuth(fbApp);
-const db          = getFirestore(fbApp);
-const ratingsCol  = collection(db, 'ratings');
+});
+const auth       = getAuth(fbApp);
+const db         = getFirestore(fbApp);
+const ratingsCol = collection(db, 'ratings');
 
 // ── Scale ─────────────────────────────────────────────────────
 const LABELS = [
@@ -399,349 +382,315 @@ const LABELS = [
   'Slightly off', 'Noticeable', 'Getting bad', 'Pretty bad',
   'Really stinks!', 'Awful', 'Absolutely deadly'
 ];
-// Exact match with heatmap gradient stops (index = stink 1..10)
-const STINK_COLORS = [
-  '', '#00ff88', '#44ff66', '#88ee44', '#ccee22', '#eeff00',
-  '#ffcc00', '#ff8800', '#ff4400', '#ff1100', '#cc0000'
+const COLORS = [
+  '', '#00ff88','#44ff66','#88ee44','#ccee22','#eeff00',
+  '#ffcc00','#ff8800','#ff4400','#ff1100','#cc0000'
 ];
 
 // ── State ─────────────────────────────────────────────────────
-let currentUser  = null;
-let gpsPos       = null;  // live GPS (for blue dot)
-let ratingPos    = null;  // position to submit (GPS or map-clicked)
-let sliderVal    = 3;
-let allRatings   = [];
+let currentUser = null;
+let allRatings  = [];
+let mode        = 'stink';          // 'stink' | 'rate' | 'mine'
+let pendingPos  = null;             // position chosen for a rating
+let sheetVal    = 3;
 
 // ── Helpers ───────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-
-function showToast(msg, ms = 2800) {
+const showToast = (msg, ms = 2800) => {
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), ms);
-}
-
-function formatDate(ts) {
-  return new Date(ts).toLocaleString('default', {
-    day: '2-digit', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
-}
-
-function haversine(lat1, lon1, lat2, lon2) {
+};
+const formatDate = ts => new Date(ts).toLocaleString('default', {
+  day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+});
+function haversine(la1, lo1, la2, lo2) {
   const R = 6371, r = Math.PI / 180;
-  const dLat = (lat2 - lat1) * r, dLon = (lon2 - lon1) * r;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*r) * Math.cos(lat2*r) * Math.sin(dLon/2)**2;
+  const a = Math.sin((la2-la1)*r/2)**2 + Math.cos(la1*r)*Math.cos(la2*r)*Math.sin((lo2-lo1)*r/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
 function getUid() {
   if (currentUser) return currentUser.uid;
-  let uid = localStorage.getItem('stinkmap_uid');
-  if (!uid) { uid = crypto.randomUUID(); localStorage.setItem('stinkmap_uid', uid); }
-  return uid;
-}
-
-function checkSubmitReady() {
-  $('submit-btn').disabled = !ratingPos;
-}
-
-// ── GPS ───────────────────────────────────────────────────────
-function getPositionOnce() {
-  return new Promise(resolve => {
-    if (!navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition(
-      p => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, acc: Math.round(p.coords.accuracy) }),
-      () => resolve(null),
-      { enableHighAccuracy: true, timeout: 12000 }
-    );
-  });
+  let id = localStorage.getItem('stinkmap_uid');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('stinkmap_uid', id); }
+  return id;
 }
 
 // ── Map ───────────────────────────────────────────────────────
-let map, heatLayer, userMarker, userAccCircle;
+let map, heat, userMarker, userAcc;
 
 function initMap() {
   map = L.map('leaflet-map', { center: [20, 0], zoom: 2, zoomControl: false });
-
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
     subdomains: 'abcd', maxZoom: 20
   }).addTo(map);
 
-  // Heatmap gradient — keys map linearly to stink 1–10
-  // 0.1 = stink 1 (fresh green) … 1.0 = stink 10 (deadly red)
-  heatLayer = L.heatLayer([], {
+  heat = L.heatLayer([], {
     radius: 40, blur: 30, maxZoom: 17, max: 10,
     gradient: {
-      0.10: '#00ff88',  // 1
-      0.20: '#44ff66',  // 2
-      0.30: '#88ee44',  // 3
-      0.40: '#ccee22',  // 4
-      0.50: '#eeff00',  // 5
-      0.60: '#ffcc00',  // 6
-      0.70: '#ff8800',  // 7
-      0.80: '#ff4400',  // 8
-      0.90: '#ff1100',  // 9
-      1.00: '#cc0000'   // 10
+      0.10:'#00ff88', 0.20:'#44ff66', 0.30:'#88ee44', 0.40:'#ccee22', 0.50:'#eeff00',
+      0.60:'#ffcc00', 0.70:'#ff8800', 0.80:'#ff4400', 0.90:'#ff1100', 1.00:'#cc0000'
     }
   }).addTo(map);
 
-  // ── Map click → "Rate this spot" popup ──────────────────────
-  map.on('click', e => {
-    const lat = e.latlng.lat, lng = e.latlng.lng;
-    const btnId = 'map-rate-btn-' + Date.now();
-    L.popup({ closeButton: true, maxWidth: 220 })
-      .setLatLng(e.latlng)
-      .setContent(`
-        <div class="popup-coords">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
-        <button class="popup-rate-btn" id="${btnId}">💨 Rate this spot</button>
-      `)
-      .openOn(map);
-    // Attach click after popup renders
-    setTimeout(() => {
-      const btn = document.getElementById(btnId);
-      if (btn) btn.addEventListener('click', () => {
-        map.closePopup();
-        switchTab('rate-view', { lat, lon: lng, fromMap: true });
-      });
-    }, 50);
-  });
+  map.on('click', onMapClick);
 }
 
-// Build heatmap: cluster nearby ratings (~30 m), use avg stink.
-// Multiple points in cluster → add them all at avg weight so the blob grows.
 function buildHeatPoints(ratings) {
-  if (!ratings.length) return [];
-  const CLUSTER_KM = 0.03;
-  const used = new Set();
-  const points = [];
+  const CLUSTER = 0.03, used = new Set(), pts = [];
   for (let i = 0; i < ratings.length; i++) {
     if (used.has(i)) continue;
-    const group = [ratings[i]]; used.add(i);
-    for (let j = i + 1; j < ratings.length; j++) {
-      if (used.has(j)) continue;
-      if (haversine(ratings[i].lat, ratings[i].lon, ratings[j].lat, ratings[j].lon) < CLUSTER_KM) {
-        group.push(ratings[j]); used.add(j);
+    const g = [ratings[i]]; used.add(i);
+    for (let j = i+1; j < ratings.length; j++) {
+      if (!used.has(j) && haversine(ratings[i].lat, ratings[i].lon, ratings[j].lat, ratings[j].lon) < CLUSTER) {
+        g.push(ratings[j]); used.add(j);
       }
     }
-    const lat = group.reduce((s, r) => s + r.lat, 0) / group.length;
-    const lon = group.reduce((s, r) => s + r.lon, 0) / group.length;
-    const avg = group.reduce((s, r) => s + r.stink, 0) / group.length;
-    // One point per rating in cluster → more ratings = larger blob, avg value = colour
-    for (let k = 0; k < group.length; k++) points.push([lat, lon, avg]);
+    const lat = g.reduce((s,r)=>s+r.lat,0)/g.length;
+    const lon = g.reduce((s,r)=>s+r.lon,0)/g.length;
+    const avg = g.reduce((s,r)=>s+r.stink,0)/g.length;
+    g.forEach(() => pts.push([lat, lon, avg]));
   }
-  return points;
+  return pts;
 }
 
 function renderMap(ratings) {
   $('rating-num').textContent = ratings.length;
-  heatLayer.setLatLngs(buildHeatPoints(ratings));
+  heat.setLatLngs(buildHeatPoints(ratings));
 }
 
-// User blue dot
-function updateUserMarker(lat, lon, acc) {
+function updateUserDot(lat, lon, acc) {
   const ll = [lat, lon];
   if (!userMarker) {
-    const icon = L.divIcon({
-      className: 'user-loc-dot',
-      iconSize: [16, 16], iconAnchor: [8, 8]
-    });
-    userMarker    = L.marker(ll, { icon, zIndexOffset: 1000, interactive: false }).addTo(map);
-    userAccCircle = L.circle(ll, {
-      radius: acc, color: '#4285f4', fillColor: '#4285f4',
-      fillOpacity: 0.08, weight: 1, opacity: 0.35, interactive: false
+    userMarker = L.marker(ll, {
+      icon: L.divIcon({ className: 'user-loc-dot', iconSize: [16,16], iconAnchor: [8,8] }),
+      zIndexOffset: 1000, interactive: false
+    }).addTo(map);
+    userAcc = L.circle(ll, {
+      radius: acc, color:'#4285f4', fillColor:'#4285f4',
+      fillOpacity:.08, weight:1, opacity:.35, interactive: false
     }).addTo(map);
   } else {
     userMarker.setLatLng(ll);
-    userAccCircle.setLatLng(ll);
-    userAccCircle.setRadius(acc);
+    userAcc.setLatLng(ll).setRadius(acc);
   }
 }
 
-// ── Slider ────────────────────────────────────────────────────
-function updateSlider(val) {
-  sliderVal = val;
-  $('stink-value').textContent = val;
-  $('stink-value').style.color = STINK_COLORS[val];
-  $('stink-label').textContent = LABELS[val];
-  $('stink-label').style.color = STINK_COLORS[val];
+// ── Map click dispatcher ──────────────────────────────────────
+function onMapClick(e) {
+  if (mode === 'stink') showStinkPopup(e.latlng);
+  if (mode === 'rate')  openRateSheet(e.latlng);
 }
 
-// ── My ratings ────────────────────────────────────────────────
-function renderMyRatings(ratings) {
-  const uid  = getUid();
-  const mine = ratings.filter(r => r.uid === uid).slice(0, 15);
-  const list = $('my-ratings-list');
-  if (!mine.length) {
-    list.innerHTML = '<p class="empty-msg">You haven\'t rated anything yet.</p>';
+// ── Stink Map: show popup with nearby ratings ─────────────────
+function showStinkPopup(latlng) {
+  const RADIUS_KM = 0.15;
+  const nearby = allRatings.filter(r =>
+    haversine(latlng.lat, latlng.lng, r.lat, r.lon) < RADIUS_KM
+  );
+
+  if (!nearby.length) {
+    L.popup({ closeButton: false, maxWidth: 220 })
+      .setLatLng(latlng)
+      .setContent(`<div class="pop-empty">😶 No ratings here yet.<br>Switch to <b>Rate</b> mode to add one!</div>`)
+      .openOn(map);
     return;
   }
-  list.innerHTML = mine.map(r => `
-    <div class="rating-item">
-      <div class="ri-score" style="color:${STINK_COLORS[r.stink]}">${r.stink}</div>
-      <div class="ri-info">
-        <div class="ri-title">${LABELS[r.stink]}</div>
-        <div class="ri-meta">📍 ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)} · ${formatDate(r.ts)}</div>
-        ${r.comment ? `<div class="ri-comment">"${r.comment}"</div>` : ''}
+
+  const avg   = nearby.reduce((s,r) => s+r.stink, 0) / nearby.length;
+  const color = COLORS[Math.round(avg)];
+  const label = LABELS[Math.round(avg)];
+
+  const entries = nearby
+    .sort((a,b) => b.ts - a.ts)
+    .slice(0, 8)
+    .map(r => {
+      const comment = r.comment
+        ? `<span class="pop-comment">"${r.comment}"</span>`
+        : `<span style="color:var(--muted);font-style:italic">no comment</span>`;
+      return `<div class="pop-entry">
+        <div class="pop-score" style="color:${COLORS[r.stink]}">${r.stink}</div>
+        <div class="pop-text">${comment}<br><span style="font-size:.68rem">${formatDate(r.ts)}</span></div>
+      </div>`;
+    }).join('');
+
+  L.popup({ closeButton: true, maxWidth: 260 })
+    .setLatLng(latlng)
+    .setContent(`
+      <div class="pop-avg">
+        <div class="pop-avg-score" style="color:${color}">${avg.toFixed(1)}</div>
+        <div class="pop-avg-label">${label}</div>
       </div>
-      <button class="ri-delete" data-id="${r.id}">Delete</button>
-    </div>`).join('');
-
-  list.querySelectorAll('.ri-delete').forEach(btn => {
-    btn.addEventListener('click', () => deleteRating(btn.dataset.id));
-  });
+      <div class="pop-count">📍 ${nearby.length} rating${nearby.length>1?'s':''} within 150 m</div>
+      ${entries}
+    `)
+    .openOn(map);
 }
 
-async function deleteRating(id) {
-  try {
-    await deleteDoc(doc(db, 'ratings', id));
-    showToast('🗑️ Rating deleted');
-  } catch (err) {
-    console.error(err);
-    showToast('⚠️ Could not delete — check connection');
-  }
+// ── Rate mode: bottom sheet ───────────────────────────────────
+function openRateSheet(latlng) {
+  pendingPos = { lat: latlng.lat, lon: latlng.lng };
+  map.closePopup();
+
+  const isGps = pendingPos === null; // always false here, but keep for clarity
+  $('sheet-loc-dot').className = 'sheet-loc-dot' + (pendingPos ? ' map-pin' : '');
+  $('sheet-loc-text').textContent = `${pendingPos.lat.toFixed(5)}, ${pendingPos.lon.toFixed(5)}`;
+
+  updateSheetSlider(sheetVal);
+  $('sheet-comment').value = '';
+  $('rate-sheet').classList.add('open');
 }
 
-// ── Rate view ─────────────────────────────────────────────────
-async function startRateView(override = null) {
-  const dot = $('loc-dot');
+function closeRateSheet() {
+  $('rate-sheet').classList.remove('open');
+  pendingPos = null;
+}
 
-  if (override?.fromMap) {
-    // Position was picked by clicking the map
-    ratingPos = override;
-    dot.className = 'loc-dot map-pin';
-    $('loc-text').textContent = `${override.lat.toFixed(5)}, ${override.lon.toFixed(5)}  (selected from map)`;
-    $('loc-text').className = 'ready';
-    $('rate-sub-text').textContent = 'Rating the spot you tapped on the map.';
-    checkSubmitReady();
-    renderMyRatings(allRatings);
-    return;
-  }
-
-  // GPS flow
-  $('rate-sub-text').textContent = 'How bad does it smell right here?';
-  dot.className = 'loc-dot waiting';
-  $('loc-text').textContent = 'Getting your location…';
-  $('loc-text').className = '';
-  ratingPos = null;
-  checkSubmitReady();
-
-  const pos = await getPositionOnce();
-  if (pos) {
-    gpsPos = pos;
-    ratingPos = pos;
-    dot.className = 'loc-dot';
-    $('loc-text').textContent = `${pos.lat.toFixed(5)}, ${pos.lon.toFixed(5)}  (±${pos.acc} m)`;
-    $('loc-text').className = 'ready';
-  } else {
-    dot.className = 'loc-dot error';
-    $('loc-text').textContent = 'No GPS — go back to the map and tap a spot to rate it.';
-    showToast('⚠️ No GPS — tap any spot on the map instead');
-  }
-  checkSubmitReady();
-  renderMyRatings(allRatings);
+function updateSheetSlider(val) {
+  sheetVal = val;
+  $('sheet-score').textContent = val;
+  $('sheet-score').style.color = COLORS[val];
+  $('sheet-label').textContent = LABELS[val];
+  $('sheet-label').style.color = COLORS[val];
 }
 
 async function submitRating() {
-  if (!ratingPos) return;
+  if (!pendingPos) return;
 
-  const btn = $('submit-btn'), label = $('submit-label'), icon = $('submit-icon');
+  const btn   = $('sheet-submit');
+  const icon  = $('sheet-submit-icon');
+  const label = $('sheet-submit-label');
   btn.disabled = true;
   icon.innerHTML = '<div class="spinner"></div>';
   label.textContent = 'Saving…';
 
   try {
     await addDoc(ratingsCol, {
-      lat:     ratingPos.lat,
-      lon:     ratingPos.lon,
-      stink:   sliderVal,
-      comment: $('comment').value.trim(),
+      lat:     pendingPos.lat,
+      lon:     pendingPos.lon,
+      stink:   sheetVal,
+      comment: $('sheet-comment').value.trim(),
       ts:      Date.now(),
       uid:     getUid()
     });
-
-    $('comment').value = '';
-    $('char-count').textContent = '0 / 100';
-    $('char-count').className = 'char-count';
-    updateSlider(3);
-    $('stink-slider').value = 3;
-
-    showToast(`${sliderVal}/10 — Rating saved! 🌍`);
-    switchTab('map-view');
-    setTimeout(() => map.setView([ratingPos.lat, ratingPos.lon], 15, { animate: true }), 150);
-
+    showToast(`${sheetVal}/10 — Rating saved! 🌍`);
+    closeRateSheet();
+    map.setView([pendingPos.lat, pendingPos.lon], 15, { animate: true });
   } catch (err) {
     console.error(err);
-    showToast('⚠️ Could not save — check your connection.');
+    showToast('⚠️ Could not save — check connection');
   } finally {
     icon.textContent = '💨';
-    label.textContent = 'Submit Stink Rating';
-    checkSubmitReady();
+    label.textContent = 'Submit';
+    btn.disabled = false;
   }
 }
 
-// ── Firestore listener ────────────────────────────────────────
-function subscribeToRatings() {
-  const q = query(ratingsCol, orderBy('ts', 'desc'), limit(2000));
-  onSnapshot(q, snapshot => {
-    allRatings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderMap(allRatings);
-    if ($('rate-view').classList.contains('active')) renderMyRatings(allRatings);
-  }, err => {
-    console.error(err);
-    showToast('⚠️ Could not load ratings — check connection.', 4000);
-  });
+// ── My Ratings panel ─────────────────────────────────────────
+function renderMine() {
+  const uid  = getUid();
+  const mine = allRatings.filter(r => r.uid === uid).slice(0, 30);
+  const list = $('mine-list');
+  if (!mine.length) {
+    list.innerHTML = '<p class="empty-msg">You haven\'t rated anything yet.<br>Switch to Rate mode and tap the map!</p>';
+    return;
+  }
+  list.innerHTML = mine.map(r => `
+    <div class="rating-item">
+      <div class="ri-score" style="color:${COLORS[r.stink]}">${r.stink}</div>
+      <div class="ri-info">
+        <div class="ri-title">${LABELS[r.stink]}</div>
+        <div class="ri-meta">📍 ${r.lat.toFixed(4)}, ${r.lon.toFixed(4)} · ${formatDate(r.ts)}</div>
+        ${r.comment ? `<div class="ri-comment">"${r.comment}"</div>` : ''}
+      </div>
+      <button class="ri-loc-btn" data-lat="${r.lat}" data-lon="${r.lon}">📍</button>
+      <button class="ri-delete" data-id="${r.id}">🗑️</button>
+    </div>`).join('');
+
+  list.querySelectorAll('.ri-delete').forEach(btn =>
+    btn.addEventListener('click', () => deleteRating(btn.dataset.id)));
+
+  list.querySelectorAll('.ri-loc-btn').forEach(btn =>
+    btn.addEventListener('click', () => {
+      setMode('stink');
+      map.setView([+btn.dataset.lat, +btn.dataset.lon], 15, { animate: true });
+    }));
 }
 
-// ── Tabs ──────────────────────────────────────────────────────
-function switchTab(viewId, mapPos = null) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(viewId).classList.add('active');
-  document.querySelector(`.tab[data-view="${viewId}"]`).classList.add('active');
-  if (viewId === 'rate-view') startRateView(mapPos);
-  if (viewId === 'map-view')  setTimeout(() => map && map.invalidateSize(), 80);
+async function deleteRating(id) {
+  try {
+    await deleteDoc(doc(db, 'ratings', id));
+    showToast('🗑️ Deleted');
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ Could not delete');
+  }
+}
+
+// ── Mode switching ────────────────────────────────────────────
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.mode === m));
+
+  // panels
+  $('mine-panel').classList.toggle('open', m === 'mine');
+  if (m !== 'rate') closeRateSheet();
+
+  // hint
+  const hint = $('mode-hint');
+  if (m === 'stink') {
+    hint.textContent = '🗺️ Tap the map to see stink details';
+    hint.classList.remove('hidden');
+  } else if (m === 'rate') {
+    hint.textContent = '💨 Tap anywhere on the map to rate it';
+    hint.classList.remove('hidden');
+  } else {
+    hint.classList.add('hidden');
+  }
+
+  if (m === 'mine') renderMine();
+  setTimeout(() => map.invalidateSize(), 80);
+}
+
+// ── Firestore listener ────────────────────────────────────────
+function subscribe() {
+  const q = query(ratingsCol, orderBy('ts','desc'), limit(2000));
+  onSnapshot(q, snap => {
+    allRatings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderMap(allRatings);
+    if (mode === 'mine') renderMine();
+  }, err => {
+    console.error(err);
+    showToast('⚠️ Could not load ratings', 4000);
+  });
 }
 
 // ── Events ────────────────────────────────────────────────────
 document.querySelectorAll('.tab').forEach(t =>
-  t.addEventListener('click', () => switchTab(t.dataset.view)));
+  t.addEventListener('click', () => setMode(t.dataset.mode)));
 
-$('fab').addEventListener('click', () => switchTab('rate-view', null));  // GPS
-$('stink-slider').addEventListener('input', e => updateSlider(+e.target.value));
-$('comment').addEventListener('input', e => {
-  const n = e.target.value.length;
-  $('char-count').textContent = `${n} / 100`;
-  $('char-count').className = 'char-count' + (n > 80 ? ' warn' : '');
-});
-$('submit-btn').addEventListener('click', submitRating);
+$('sheet-slider').addEventListener('input', e => updateSheetSlider(+e.target.value));
+$('sheet-cancel').addEventListener('click', closeRateSheet);
+$('sheet-submit').addEventListener('click', submitRating);
 
 // ── Init ──────────────────────────────────────────────────────
-updateSlider(3);
 initMap();
-subscribeToRatings();
+subscribe();
+setMode('stink');
 
-// Anonymous auth
-onAuthStateChanged(auth, user => { currentUser = user; });
+onAuthStateChanged(auth, u => { currentUser = u; });
 signInAnonymously(auth).catch(console.error);
 
-// Live GPS → blue dot on map
 if (navigator.geolocation) {
-  navigator.geolocation.watchPosition(position => {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
-    const acc = Math.round(position.coords.accuracy);
-    gpsPos = { lat, lon, acc };
-    if (map) updateUserMarker(lat, lon, acc);
-    // First fix: fly map to user
+  navigator.geolocation.watchPosition(p => {
+    const lat=p.coords.latitude, lon=p.coords.longitude, acc=Math.round(p.coords.accuracy);
+    updateUserDot(lat, lon, acc);
     if (!userMarker && map) map.setView([lat, lon], 12, { animate: true });
   }, null, { enableHighAccuracy: true, maximumAge: 10000 });
 }
 
-// PWA
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(console.warn);
-}
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(console.warn);
 </script>
 </body>
 </html>
