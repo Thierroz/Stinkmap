@@ -150,6 +150,29 @@
       box-shadow: 0 0 0 4px rgba(66,133,244,.3), 0 2px 6px rgba(0,0,0,.5);
     }
 
+    /* ── Stink info sheet ────────────────────────────────── */
+    #stink-sheet {
+      position: fixed; bottom: var(--tabbar-h); left: 0; right: 0; z-index: 150;
+      background: var(--surface2);
+      border-top: 1px solid rgba(181,245,66,.25);
+      border-radius: 20px 20px 0 0;
+      max-height: 70vh;
+      display: flex; flex-direction: column;
+      transform: translateY(100%);
+      transition: transform .35s cubic-bezier(.32,1,.6,1);
+      box-shadow: 0 -8px 40px rgba(0,0,0,.6);
+    }
+    #stink-sheet.open { transform: translateY(0); }
+    #stink-sheet-header {
+      flex-shrink: 0;
+      padding: 0 20px 12px;
+    }
+    #stink-sheet-body {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 20px 20px;
+    }
+
     /* ── Rate bottom sheet ────────────────────────────────── */
     #rate-sheet {
       position: fixed; bottom: var(--tabbar-h); left: 0; right: 0; z-index: 150;
@@ -318,6 +341,17 @@
 
   <!-- Mode hint -->
   <div id="mode-hint">Tap the map to see stink details</div>
+
+  <!-- Stink info sheet -->
+  <div id="stink-sheet">
+    <div id="stink-sheet-header">
+      <button id="stink-handle-btn" title="Close" style="display:flex;align-items:center;justify-content:center;width:100%;padding:6px 0 10px;margin:-6px 0 4px;background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent">
+        <div class="sheet-handle"></div>
+      </button>
+      <div id="stink-sheet-summary"></div>
+    </div>
+    <div id="stink-sheet-body"></div>
+  </div>
 
   <!-- Rate bottom sheet -->
   <div id="rate-sheet">
@@ -496,53 +530,50 @@ function updateUserDot(lat, lon, acc) {
 
 // ── Map click dispatcher ──────────────────────────────────────
 function onMapClick(e) {
-  if (mode === 'stink') showStinkPopup(e.latlng);
+  if (mode === 'stink') showStinkSheet(e.latlng);
   if (mode === 'rate')  openRateSheet(e.latlng);
 }
 
-// ── Stink Map: show popup with nearby ratings ─────────────────
-function showStinkPopup(latlng) {
+// ── Stink Map: show bottom sheet with nearby ratings ─────────
+function showStinkSheet(latlng) {
   const RADIUS_KM = 0.15;
-  const nearby = allRatings.filter(r =>
-    haversine(latlng.lat, latlng.lng, r.lat, r.lon) < RADIUS_KM
-  );
+  const nearby = allRatings
+    .filter(r => haversine(latlng.lat, latlng.lng, r.lat, r.lon) < RADIUS_KM)
+    .sort((a, b) => b.ts - a.ts);
 
   if (!nearby.length) {
-    L.popup({ closeButton: false, maxWidth: 220 })
-      .setLatLng(latlng)
-      .setContent(`<div class="pop-empty">😶 No ratings here yet.<br>Switch to <b>Rate</b> mode to add one!</div>`)
-      .openOn(map);
+    showToast('😶 No ratings here yet — switch to Rate to add one!', 3000);
     return;
   }
 
-  const avg   = nearby.reduce((s,r) => s+r.stink, 0) / nearby.length;
+  const avg   = nearby.reduce((s, r) => s + r.stink, 0) / nearby.length;
   const color = COLORS[Math.round(avg)];
   const label = LABELS[Math.round(avg)];
 
-  const entries = nearby
-    .sort((a,b) => b.ts - a.ts)
-    .slice(0, 8)
-    .map(r => {
-      const comment = r.comment
-        ? `<span class="pop-comment">"${r.comment}"</span>`
-        : `<span style="color:var(--muted);font-style:italic">no comment</span>`;
-      return `<div class="pop-entry">
-        <div class="pop-score" style="color:${COLORS[r.stink]}">${r.stink}</div>
-        <div class="pop-text">${comment}<br><span style="font-size:.68rem">${formatDate(r.ts)}</span></div>
-      </div>`;
-    }).join('');
+  $('stink-sheet-summary').innerHTML = `
+    <div class="pop-avg">
+      <div class="pop-avg-score" style="color:${color}">${avg.toFixed(1)}</div>
+      <div class="pop-avg-label">${label}</div>
+    </div>
+    <div class="pop-count">📍 ${nearby.length} rating${nearby.length > 1 ? 's' : ''} within 150 m</div>
+  `;
 
-  L.popup({ closeButton: true, maxWidth: 260 })
-    .setLatLng(latlng)
-    .setContent(`
-      <div class="pop-avg">
-        <div class="pop-avg-score" style="color:${color}">${avg.toFixed(1)}</div>
-        <div class="pop-avg-label">${label}</div>
+  $('stink-sheet-body').innerHTML = nearby.map(r => `
+    <div class="pop-entry">
+      <div class="pop-score" style="color:${COLORS[r.stink]}">${r.stink}</div>
+      <div class="pop-text">
+        ${r.comment ? `<span class="pop-comment">"${r.comment}"</span><br>` : '<span style="font-style:italic;color:var(--muted)">no comment</span><br>'}
+        <span style="font-size:.68rem">${formatDate(r.ts)}</span>
       </div>
-      <div class="pop-count">📍 ${nearby.length} rating${nearby.length>1?'s':''} within 150 m</div>
-      ${entries}
-    `)
-    .openOn(map);
+    </div>`).join('');
+
+  $('stink-sheet-body').scrollTop = 0;
+  $('stink-sheet').classList.add('open');
+  map.closePopup();
+}
+
+function closeStinkSheet() {
+  $('stink-sheet').classList.remove('open');
 }
 
 // ── Rate mode: bottom sheet ───────────────────────────────────
@@ -653,7 +684,9 @@ function setMode(m) {
 
   // panels
   $('mine-panel').classList.toggle('open', m === 'mine');
-  if (m !== 'rate') closeRateSheet();
+  if (m !== 'rate')  closeRateSheet();
+  if (m !== 'stink') closeStinkSheet();
+  map.closePopup();
 
   // hint
   const hint = $('mode-hint');
@@ -688,6 +721,7 @@ function subscribe() {
 document.querySelectorAll('.tab').forEach(t =>
   t.addEventListener('click', () => setMode(t.dataset.mode)));
 
+$('stink-handle-btn').addEventListener('click', closeStinkSheet);
 $('sheet-handle-btn').addEventListener('click', closeRateSheet);
 $('sheet-slider').addEventListener('input', e => updateSheetSlider(+e.target.value));
 $('sheet-submit').addEventListener('click', submitRating);
