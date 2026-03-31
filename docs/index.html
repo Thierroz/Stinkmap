@@ -165,7 +165,15 @@
 
     .sheet-handle {
       width: 36px; height: 4px; border-radius: 2px;
-      background: rgba(255,255,255,.2); margin: 0 auto 14px;
+      background: rgba(255,255,255,.25); margin: 0 auto 14px;
+      cursor: pointer;
+    }
+    /* invisible tap target around handle */
+    #sheet-handle-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 100%; padding: 6px 0 10px; margin: -6px 0 4px;
+      background: none; border: none; cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
     }
     .sheet-loc {
       font-size: .78rem; color: var(--muted);
@@ -212,15 +220,8 @@
     #sheet-comment::placeholder { color: var(--muted); }
     #sheet-comment:focus { border-color: var(--accent); }
 
-    .sheet-btns { display: flex; gap: 10px; }
-    #sheet-cancel {
-      padding: 14px 20px; border-radius: 12px;
-      background: none; border: 1px solid rgba(255,255,255,.12);
-      color: var(--muted); font-family: inherit; font-size: .9rem;
-      cursor: pointer; -webkit-tap-highlight-color: transparent;
-    }
     #sheet-submit {
-      flex: 1; padding: 14px;
+      width: 100%; padding: 14px;
       background: linear-gradient(135deg, #b5f542, #5dff8a);
       border: none; border-radius: 12px;
       color: #0d0d1a; font-size: 1rem; font-weight: 700;
@@ -320,7 +321,9 @@
 
   <!-- Rate bottom sheet -->
   <div id="rate-sheet">
-    <div class="sheet-handle"></div>
+    <button id="sheet-handle-btn" title="Close">
+      <div class="sheet-handle"></div>
+    </button>
     <div class="sheet-loc">
       <div class="sheet-loc-dot" id="sheet-loc-dot"></div>
       <span id="sheet-loc-text">…</span>
@@ -334,8 +337,7 @@
       </div>
     </div>
     <textarea id="sheet-comment" rows="2" maxlength="100" placeholder="What does it smell like? (optional)"></textarea>
-    <div class="sheet-btns">
-      <button id="sheet-cancel">Cancel</button>
+    <div style="margin-top:4px">
       <button id="sheet-submit">
         <span id="sheet-submit-icon">💨</span>
         <span id="sheet-submit-label">Submit</span>
@@ -686,8 +688,8 @@ function subscribe() {
 document.querySelectorAll('.tab').forEach(t =>
   t.addEventListener('click', () => setMode(t.dataset.mode)));
 
+$('sheet-handle-btn').addEventListener('click', closeRateSheet);
 $('sheet-slider').addEventListener('input', e => updateSheetSlider(+e.target.value));
-$('sheet-cancel').addEventListener('click', closeRateSheet);
 $('sheet-submit').addEventListener('click', submitRating);
 
 // ── Init ──────────────────────────────────────────────────────
